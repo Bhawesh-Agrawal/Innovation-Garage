@@ -167,7 +167,7 @@ const teamData = {
       name: "Akshay Kumar Korepu",
       role: "Executive",
       dept: "MnC Dept. - 3rd Year",
-      img: "/teams/Akshay.png",
+      img: "/teams/akshay.png",
       link: "https://www.linkedin.com/in/akshaykumarkorepu/"
     },
     {
