@@ -282,6 +282,13 @@ const teamData = {
       link: "https://www.linkedin.com/in/mokshith-srinivas-surutkar-436322280/"
     },
     {
+      name: "Harsha",
+      role: "Addl. Sec",
+      dept: "ECE Dept. - 4rth Year",
+      img: "/teams/Harsha.png",
+      link: ""
+    },
+    {
       name: "Hardik Nishad",
       role: "Executive",
       dept: "CHEM Dept. - 3rd Year",
