@@ -15,6 +15,7 @@ export default function Navbar() {
   const navLinks: NavLink[] = [
     { name: "Home", path: "/" },
     { name: "Events", path: "/events" },
+    { name: "SIH", path: "/sih" },
     { name: "Ideas", path: "/ideas" },
     { name: "Gallery", path: "/gallery" },
     { name: "Teams", path: "/teams" },
