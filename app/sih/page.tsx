@@ -11,7 +11,7 @@ const checkpoints = [
   {
     number: 1,
     title: "Checkpoint 1",
-    deadline: "TBD", // TODO: Fill in deadline e.g. "Aug 30, 2025 · 10:00 AM"
+    deadline: "TBD",
     description:
       "Details about Checkpoint 1 will be updated here. Stay tuned for the requirements and evaluation criteria.", // TODO: Fill in description
     icon: "flag",
@@ -301,7 +301,7 @@ export default function SIHPage() {
               IGnite<span className="text-primary">36</span>{" "}
               <span className="text-secondary">Hackathon</span>
               <br />
-              <span className="text-3xl md:text-5xl text-white/60">2025 [SIH]</span>
+              <span className="text-3xl md:text-5xl text-white/60">2026 [SIH]</span>
             </h1>
 
             {/* Tagline */}
