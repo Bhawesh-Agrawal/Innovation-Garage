@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const GOOGLE_SCRIPT_URL = process.env.NEXTAUTH_URL_GSHEET;
+    const GOOGLE_SCRIPT_URL = process.env.GOOGLE_SCRIPT_URL;
     const payload = { action: "getPublicEvents" };
 
     const response = await fetch(GOOGLE_SCRIPT_URL!, {

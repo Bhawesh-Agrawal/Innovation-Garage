@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const GOOGLE_SCRIPT_URL = process.env.NEXTAUTH_URL_GSHEET;
+    const GOOGLE_SCRIPT_URL = process.env.GOOGLE_SCRIPT_URL;
 
     const payload = {
       action: "registerEvent",

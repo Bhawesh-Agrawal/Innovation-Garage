@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     // 1. Check if URL exists
-    const googleUrl = process.env.NEXTAUTH_URL_GSHEET;
+    const googleUrl = process.env.GOOGLE_SCRIPT_URL;
     if (!googleUrl) {
         return NextResponse.json({ success: false, error: "Missing Google URL in .env" }, { status: 500 });
     }

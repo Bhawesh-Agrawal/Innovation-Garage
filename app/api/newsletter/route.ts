@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { email } = body;
 
-    const GOOGLE_SCRIPT_URL = process.env.NEXTAUTH_URL_GSHEET; 
+    const GOOGLE_SCRIPT_URL = process.env.GOOGLE_SCRIPT_URL; 
     
     // We send 'sheetName: "Newsletter"' which triggers the Welcome Email logic in Google Script
     const payload = {
