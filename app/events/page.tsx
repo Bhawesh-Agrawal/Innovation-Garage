@@ -1641,7 +1641,7 @@ const upcomingEvents: EventItem[] = [
         date: "SEPT 26 / 36H",
         description: "36 hours to build the impossible. Prizes up to 1.5 lakhs",
         image: "/events/SIH26.png",
-        link: null,
+        link: "/sih",
         adminEventId: "evt_1768853845084"
 
     }
