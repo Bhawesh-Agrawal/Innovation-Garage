@@ -1634,28 +1634,17 @@ interface ServerEvent {
 // 2. STATIC DATA (Your Design Control)
 // ==========================================
 const upcomingEvents: EventItem[] = [
-  {
-    id: 1,
-    category: "Hackathons",
-    title: "Velocity '26",
-    date: "JAN 24 / 48H",
-    description: "48 hours to build the impossible. Energy drinks provided. Prizes up to 30000.",
-    image: "/events/velocity.png",
-    link: null, 
-    // 👇 PASTE THE ID YOU GOT FROM ADMIN PANEL HERE (e.g., "evt_170000...")
-    // If this ID exists in the Admin Panel and is Active, the Modal opens.
-    adminEventId: "evt_1768853845084" 
-  },
-  {
-    id: 2,
-    category: "Workshops",
-    title: "Agentic AI 2.0",
-    date: "Feb '26",
-    description: "From idea to prototype in 3 hours. Validate ideas rapidly.",
-    image: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=1000",
-    link: null,
-    // No adminEventId + No link = "Coming Soon" Toast
-  }
+    {
+        id: 1,
+        category: "Hackathons",
+        title: "SIH Ignite",
+        date: "SEPT 26 / 36H",
+        description: "36 hours to build the impossible. Prizes up to 1.5 lakhs",
+        image: "/events/SIH26.png",
+        link: null,
+        adminEventId: "evt_1768853845084"
+
+    }
 ];
 
 // Archive Data (Unchanged)
@@ -1699,7 +1688,30 @@ const archiveEvents = [
     description: "Startup Simulation challenges you to conquer real-world startup chaos.",
     image: "/events/startupsimulation.png",
     link: "/events/startupsimulation"
-  }
+  },
+    {
+        id: 5,
+        category: "Hackathons",
+        title: "Velocity '26",
+        date: "JAN 24 / 48H",
+        description: "48 hours to build the impossible. Energy drinks provided. Prizes up to 30000.",
+        image: "/events/velocity.png",
+        link: null, 
+        // 👇 PASTE THE ID YOU GOT FROM ADMIN PANEL HERE (e.g., "evt_170000...")
+        // If this ID exists in the Admin Panel and is Active, the Modal opens.
+        adminEventId: "evt_1768853845084" 
+    },
+
+    {
+        id: 6,
+        category: "Workshops",
+        title: "Agentic AI 2.0",
+        date: "Feb '26",
+        description: "From idea to prototype in 3 hours. Validate ideas rapidly.",
+        image: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?q=80&w=1000",
+        link: null,
+        // No adminEventId + No link = "Coming Soon" Toast
+    }
 ];
 
 // ==========================================
