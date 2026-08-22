@@ -14,6 +14,10 @@ const ALLOWED_ORIGINS = [
   process.env.NEXT_PUBLIC_APP_URL || "",
   "http://localhost:3000",
   "http://localhost:3001",
+  "https://ignitw.in",
+  "https://www.ignitw.in",
+  "http://ignitw.in",
+  "http://www.ignitw.in",
 ].filter(Boolean);
 
 function corsHeaders(origin: string | null) {
