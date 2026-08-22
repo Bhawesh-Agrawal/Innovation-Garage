@@ -297,7 +297,7 @@ export async function POST(req: Request) {
     };
 
     // 5. SEND TO GOOGLE
-    const GOOGLE_SCRIPT_URL = process.env.NEXTAUTH_URL_GSHEET || process.env.NEXT_PUBLIC_GOOGLE_SHEET_URL;
+    const GOOGLE_SCRIPT_URL = process.env.GOOGLE_SCRIPT_URL || process.env.NEXT_PUBLIC_GOOGLE_SHEET_URL;
     
     const response = await fetch(GOOGLE_SCRIPT_URL!, {
       method: "POST",
