@@ -1756,66 +1756,9 @@ export default function Events() {
   }, []);
 
   // --- HANDLE REGISTER CLICK ---
-//   const handleRegister = (eventItem: EventItem) => {
-    // 1. Check if it's a Dynamic Admin Event
-    // if (eventItem.adminEventId) {
-    //     // Look for this ID in the list of ACTIVE events fetched from server
-    //     const liveConfig = serverEvents.find(e => e.id === eventItem.adminEventId);
-        
-    //     if (liveConfig) {
-    //         // Found & Active -> Open Modal
-    //         setSelectedEventConfig({
-    //             id: liveConfig.id,
-    //             title: eventItem.title, // Use the pretty static title from your code
-    //             config: liveConfig.config // Use the dynamic questions from DB
-    //         });
-    //         setIsModalOpen(true);
-    //         return;
-    //     } else {
-    //         // ID exists in code, but not returned by API -> Event is Closed/Inactive
-    //         showToast("REGISTRATION CLOSED / NOT YET ACTIVE");
-    //         return;
-    //     }
-    // }
-    // Inside handleRegister
-    async function fetchActiveEvents() {
-      setIsFetching(true);
-      try {
-        const res = await fetch("/api/admin", {
-            method: "POST",
-            body: JSON.stringify({ action: "getPublicEvents" })
-        });
-
-        const result = await res.json();
-        
-        if (result.success && Array.isArray(result.data)) {
-          console.log("✅ Events Loaded:", result.data.length);
-          setServerEvents(result.data); 
-        } else {
-          setServerEvents([]); 
-        }
-      } catch (e) {
-        console.error("❌ Fetch Error:", e);
-        setServerEvents([]); 
-      } finally {
-        setIsFetching(false); // 🟢 Stop loading spinner
-      }
-  }
-
-  // Load on mount
-  useEffect(() => {
-    fetchActiveEvents();
-  }, []);
     const handleRegister = (eventItem: EventItem) => {
     // 1. Check if it's a Dynamic Admin Event
     if (eventItem.adminEventId) {
-        
-        // Safety check if data hasn't loaded yet
-        // if (!serverEvents || serverEvents.length === 0) {
-        //     showToast("CONNECTING TO SERVER... PLEASE WAIT.");
-        //     return;
-        // }   
-
         // Look for this ID in the list fetched from server
         const liveConfig = serverEvents.find(e => e.id === eventItem.adminEventId);
         
@@ -1832,13 +1775,10 @@ export default function Events() {
         } else if (liveConfig && liveConfig.status === "Closed") {
              showToast("REGISTRATION CLOSED FOR THIS EVENT.");
              return;
-        } else {
-            // ID exists in frontend code, but not returned by API (Deleted or Archived)
-            showToast("REGISTRATION LINES NOT YET ACTIVE.");
-            return;
         }
+        // Event not found or not active in server — fall through to link below
     }
-    // 2. Legacy External Link (Google Form Fallback)
+    // 2. Fallback to static link if available
     if (eventItem.link) {
       window.open(eventItem.link, "_blank");
       return;
