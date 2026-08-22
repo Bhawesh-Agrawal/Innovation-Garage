@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { google } from "googleapis";
 
 export const runtime = "nodejs";
 
@@ -44,7 +45,10 @@ const IP_LIMIT = 5;
 const ACCOUNT_LIMIT = 1; // one registration per Google account
 const WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
+const IS_DEV = process.env.NODE_ENV === "development";
+
 function checkIpLimit(ip: string): boolean {
+  if (IS_DEV) return true; // skip in dev
   const now = Date.now();
   const entry = ipRateMap.get(ip);
   if (!entry || now > entry.resetAt) {
@@ -57,6 +61,7 @@ function checkIpLimit(ip: string): boolean {
 }
 
 function checkAccountLimit(googleSub: string): boolean {
+  if (IS_DEV) return true; // skip in dev — allow unlimited test submissions
   const now = Date.now();
   const entry = accountRateMap.get(googleSub);
   if (!entry || now > entry.resetAt) {
@@ -129,36 +134,104 @@ function err(message: string, status = 400) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GAS HELPERS
+// GOOGLE SERVICE ACCOUNT CONFIG & AUTH
 // ─────────────────────────────────────────────────────────────────────────────
-async function uploadBomToGAS(gasUrl: string, file: File, teamName: string): Promise<string> {
-  const buffer = await file.arrayBuffer();
-  const base64 = Buffer.from(buffer).toString("base64");
-  const res = await fetch(gasUrl, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({
-      action: "uploadBOM",
-      fileName: `BOM_${teamName}_${Date.now()}.pdf`,
-      fileData: base64,
-      mimeType: "application/pdf",
-    }),
+function getGoogleAuth() {
+  const jsonString = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!jsonString) {
+    throw new Error("Missing GOOGLE_SERVICE_ACCOUNT_JSON in environment variables.");
+  }
+  
+  let credentials;
+  try {
+    credentials = JSON.parse(jsonString);
+  } catch (e) {
+    throw new Error("Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON. Ensure it is valid JSON.");
+  }
+
+  return new google.auth.GoogleAuth({
+    credentials: {
+      client_email: credentials.client_email,
+      private_key: credentials.private_key,
+    },
+    scopes: [
+      "https://www.googleapis.com/auth/spreadsheets",
+      "https://www.googleapis.com/auth/drive.file",
+    ],
   });
-  if (!res.ok) throw new Error("BOM upload failed");
-  const result = await res.json();
-  if (!result.url) throw new Error("No Drive URL returned");
-  return result.url;
 }
 
-async function submitToSheet(gasUrl: string, rowData: Record<string, string>): Promise<void> {
-  const res = await fetch(gasUrl, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "sihRegister", data: rowData }),
+// ─────────────────────────────────────────────────────────────────────────────
+// DIRECT GOOGLE APIS HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+async function uploadBomToDrive(file: File, teamName: string): Promise<string> {
+  const auth = getGoogleAuth();
+  const drive = google.drive({ version: "v3", auth });
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  
+  if (!folderId) throw new Error("Missing GOOGLE_DRIVE_FOLDER_ID");
+
+  const buffer = await file.arrayBuffer();
+  // Using Buffer to construct a stream
+  const { Readable } = require("stream");
+  const stream = Readable.from(Buffer.from(buffer));
+
+  const res = await drive.files.create({
+    requestBody: {
+      name: `BOM_${teamName}_${Date.now()}.pdf`,
+      parents: [folderId],
+    },
+    media: {
+      mimeType: file.type,
+      body: stream,
+    },
+    fields: "id, webViewLink",
   });
-  if (!res.ok) throw new Error("Sheet submission failed");
-  const result = await res.json();
-  if (result.result !== "success") throw new Error(result.error || "GAS error");
+  
+  // Set permissions so anyone with the link can view (optional, but useful if organisers want to click it directly)
+  if (res.data.id) {
+    try {
+      await drive.permissions.create({
+        fileId: res.data.id,
+        requestBody: { role: "reader", type: "anyone" }
+      });
+    } catch(e) {
+      console.warn("Failed to set public permission on PDF, it will remain private to the Service Account/Folder.", e);
+    }
+  }
+
+  return res.data.webViewLink || "";
+}
+
+async function submitToSheet(rowData: Record<string, string>): Promise<void> {
+  const auth = getGoogleAuth();
+  const sheets = google.sheets({ version: "v4", auth });
+  const sheetId = process.env.GOOGLE_SHEET_ID;
+  
+  if (!sheetId) throw new Error("Missing GOOGLE_SHEET_ID");
+
+  const keys = Object.keys(rowData);
+  const values = Object.values(rowData);
+
+  // Check if sheet is empty (needs headers)
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: sheetId,
+    range: "A1:Z1",
+  });
+
+  const needsHeaders = !response.data.values || response.data.values.length === 0;
+
+  const resource = {
+    values: needsHeaders ? [keys, values] : [values],
+  };
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: sheetId,
+    range: "A1",
+    valueInputOption: "USER_ENTERED",
+    insertDataOption: "INSERT_ROWS",
+    requestBody: resource,
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -337,7 +410,7 @@ export async function POST(req: Request) {
     return err("Please select a valid track.", 400);
   if (memberCount !== 5)
     return err("Exactly 5 members must be provided.", 400);
-    
+
   const hasAnyFemale = leaderGender === "Female" || memberData.some(m => m.gender === "Female");
   if (!hasAnyFemale)
     return err("At least one female member is mandatory. Your team cannot register.", 400);
@@ -383,10 +456,9 @@ export async function POST(req: Request) {
       return err("BOM file size must be under 15 MB.", 400);
   }
 
-  // ── 13. GAS URL CHECK ────────────────────────────────────────────────────
-  const GAS_URL = process.env.GOOGLE_SCRIPT_URL;
-  if (!GAS_URL) {
-    console.error("GOOGLE_SCRIPT_URL env var not set");
+  // ── 13. CREDENTIAL CHECK ─────────────────────────────────────────────────
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_JSON || !process.env.GOOGLE_SHEET_ID || !process.env.GOOGLE_DRIVE_FOLDER_ID) {
+    console.error("Missing Google API credentials in env");
     return NextResponse.json(
       {
         success: false,
@@ -401,7 +473,7 @@ export async function POST(req: Request) {
   let bomDriveUrl = "";
   if (isHardware && bomFile) {
     try {
-      bomDriveUrl = await uploadBomToGAS(GAS_URL, bomFile, sanitize(teamName));
+      bomDriveUrl = await uploadBomToDrive(bomFile, sanitize(teamName));
     } catch (e) {
       console.error("BOM upload error:", e);
       return NextResponse.json(
@@ -453,7 +525,7 @@ export async function POST(req: Request) {
 
   // ── 16. SUBMIT TO GOOGLE SHEET ────────────────────────────────────────────
   try {
-    await submitToSheet(GAS_URL, rowData);
+    await submitToSheet(rowData);
   } catch (e) {
     console.error("Sheet submission error:", e);
     return NextResponse.json(
