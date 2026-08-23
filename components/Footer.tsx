@@ -60,7 +60,7 @@ export default function Footer() {
         {/* 2. Navigation */}
         <div className="flex flex-col gap-4">
           <h4 className="text-neon-magenta text-xl uppercase tracking-widest border-b border-white/10 pb-2 mb-2 w-fit">Platform</h4>
-          {["Home", "Events", "Ideas","Gallery","Teams", "Certificates"].map((item) => (
+          {["Home", "Events", "SIH","Gallery","Teams"].map((item) => (
             item === "Certificates" ? (
               <a
                 key={item}
