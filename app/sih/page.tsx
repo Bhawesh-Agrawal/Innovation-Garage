@@ -45,10 +45,6 @@ function LiveTimer() {
   }>({ status: "idle", startTime: null, elapsed: 0 });
 
   const [display, setDisplay] = useState({ h: "00", m: "00", s: "00" });
-  const [showAdmin, setShowAdmin] = useState(false);
-  const [adminKey, setAdminKey] = useState("");
-  const [adminError, setAdminError] = useState("");
-  const [adminLoading, setAdminLoading] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -117,33 +113,6 @@ function LiveTimer() {
     };
   }, [fetchTimer]);
 
-  // Admin action
-  const adminAction = async (action: "start" | "stop" | "reset") => {
-    if (!adminKey.trim()) {
-      setAdminError("Admin key required");
-      return;
-    }
-    setAdminLoading(true);
-    setAdminError("");
-    try {
-      const res = await fetch("/api/sih-timer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, adminKey }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        setAdminError(data.error || "Action failed");
-      } else {
-        await fetchTimer(); // immediate refresh
-      }
-    } catch {
-      setAdminError("Network error");
-    } finally {
-      setAdminLoading(false);
-    }
-  };
-
   const isRunning = timerState.status === "running";
 
   return (
@@ -156,27 +125,25 @@ function LiveTimer() {
         )}
         <div className="relative bg-surface-card border-2 border-primary/40 px-8 py-6 flex flex-col items-center gap-4">
           {/* LIVE badge */}
-          <div className="flex items-center gap-2">
-            {isRunning ? (
-              <>
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full bg-primary opacity-75 rounded-full" />
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-primary" />
+          {timerState.status !== "idle" && (
+            <div className="flex items-center gap-2">
+              {isRunning ? (
+                <>
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full bg-primary opacity-75 rounded-full" />
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-primary" />
+                  </span>
+                  <span className="text-primary font-pixel text-xl tracking-widest uppercase">
+                    Live
+                  </span>
+                </>
+              ) : (
+                <span className="text-yellow-400 font-pixel text-xl tracking-widest uppercase">
+                  Paused
                 </span>
-                <span className="text-primary font-pixel text-xl tracking-widest uppercase">
-                  Live
-                </span>
-              </>
-            ) : timerState.status === "stopped" ? (
-              <span className="text-yellow-400 font-pixel text-xl tracking-widest uppercase">
-                Paused
-              </span>
-            ) : (
-              <span className="text-white/40 font-pixel text-xl tracking-widest uppercase">
-                Awaiting Start
-              </span>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* HH : MM : SS */}
           <div className="flex items-center gap-2 md:gap-4">
@@ -215,55 +182,103 @@ function LiveTimer() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Admin Panel Toggle — hidden by default, revealed with triple-click on timer label */}
-      <button
-        className="text-white/10 font-pixel text-xs hover:text-white/30 transition-colors select-none"
-        onClick={() => setShowAdmin((v) => !v)}
-      >
-        {showAdmin ? "▲ Hide Admin" : "▼ Admin Controls"}
-      </button>
+// ─────────────────────────────────────────────────────────────────────────────
+// LAUNCH COUNTDOWN COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+function LaunchCountdown() {
+  const [timeLeft, setTimeLeft] = useState<{
+    days: string;
+    hours: string;
+    minutes: string;
+    seconds: string;
+    isOver: boolean;
+  }>({ days: "00", hours: "00", minutes: "00", seconds: "00", isOver: false });
 
-      {showAdmin && (
-        <div className="bg-surface-card border border-white/10 p-4 flex flex-col gap-3 w-full max-w-sm">
-          <p className="text-white/40 font-pixel text-sm uppercase tracking-wider">
-            Admin Panel — SIH Timer
-          </p>
-          <input
-            type="password"
-            placeholder="Admin Key"
-            value={adminKey}
-            onChange={(e) => setAdminKey(e.target.value)}
-            className="bg-background-main border border-white/20 text-text-main font-pixel px-3 py-2 text-lg focus:outline-none focus:border-primary"
-          />
-          {adminError && (
-            <p className="text-red-400 font-pixel text-sm">{adminError}</p>
-          )}
-          <div className="flex gap-2">
-            <button
-              onClick={() => adminAction("start")}
-              disabled={adminLoading || isRunning}
-              className="flex-1 py-2 bg-primary text-white font-pixel text-lg uppercase tracking-widest hover:bg-primary/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              {adminLoading ? "..." : "Start"}
-            </button>
-            <button
-              onClick={() => adminAction("stop")}
-              disabled={adminLoading || !isRunning}
-              className="flex-1 py-2 bg-yellow-500 text-black font-pixel text-lg uppercase tracking-widest hover:bg-yellow-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              {adminLoading ? "..." : "Stop"}
-            </button>
-            <button
-              onClick={() => adminAction("reset")}
-              disabled={adminLoading}
-              className="flex-1 py-2 bg-surface-card border border-white/20 text-white font-pixel text-lg uppercase tracking-widest hover:border-red-500 hover:text-red-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              {adminLoading ? "..." : "Reset"}
-            </button>
+  useEffect(() => {
+    // 11 September 2026, 6:00 PM IST
+    const target = new Date("2026-09-11T18:00:00+05:30").getTime();
+
+    const calculateTimeLeft = () => {
+      const now = Date.now();
+      const diff = target - now;
+
+      if (diff <= 0) {
+        setTimeLeft({ days: "00", hours: "00", minutes: "00", seconds: "00", isOver: true });
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / 1000 / 60) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+
+      setTimeLeft({
+        days: String(days).padStart(2, "0"),
+        hours: String(hours).padStart(2, "0"),
+        minutes: String(minutes).padStart(2, "0"),
+        seconds: String(seconds).padStart(2, "0"),
+        isOver: false,
+      });
+    };
+
+    calculateTimeLeft();
+    const interval = setInterval(calculateTimeLeft, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  if (timeLeft.isOver) {
+    return (
+      <div className="relative bg-surface-card border-2 border-secondary/40 px-6 py-4 flex flex-col items-center gap-2 max-w-md w-full">
+        <span className="animate-pulse text-secondary font-pixel text-xl tracking-widest uppercase">
+          🚀 Hackathon Started!
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative bg-surface-card border-2 border-secondary/40 px-6 py-4 flex flex-col items-center gap-3 max-w-lg w-full">
+      {/* Title */}
+      <div className="flex items-center gap-2">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full bg-secondary opacity-75 rounded-full" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-secondary" />
+        </span>
+        <span className="text-secondary font-pixel text-sm md:text-base tracking-widest uppercase text-center">
+          Countdown to Launch (Sep 11, 2026, 6:00 PM IST)
+        </span>
+      </div>
+
+      {/* Grid displays */}
+      <div className="flex items-center gap-2 md:gap-4 font-pixel">
+        {[
+          { val: timeLeft.days, label: "Days" },
+          { val: timeLeft.hours, label: "Hrs" },
+          { val: timeLeft.minutes, label: "Min" },
+          { val: timeLeft.seconds, label: "Sec" }
+        ].map((seg, i) => (
+          <div key={i} className="flex items-center">
+            <div className="flex flex-col items-center bg-background-main border border-white/10 px-3 py-2 min-w-[56px] md:min-w-[70px]">
+              <span className="text-2xl md:text-4xl text-text-main leading-none tabular-nums font-bold">
+                {seg.val}
+              </span>
+              <span className="text-[10px] text-white/40 tracking-wider mt-1 uppercase">
+                {seg.label}
+              </span>
+            </div>
+            {i < 3 && (
+              <span className="text-xl md:text-3xl text-secondary/60 ml-2 animate-pulse">
+                :
+              </span>
+            )}
           </div>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }
@@ -320,7 +335,7 @@ export default function SIHPage() {
                 <span className="text-primary">36 Hour-Hackathon</span> in
                 collaboration with{" "}
                 <span className="text-secondary">
-                  Smart India Hackathon (SIH) 2025!
+                  Smart India Hackathon (SIH) 2026!
                 </span>
               </p>
               <p className="text-white/40 font-pixel text-lg leading-relaxed">
@@ -354,7 +369,7 @@ export default function SIHPage() {
                 </span>
               </Link>
               <p className="text-white/30 font-pixel text-sm mt-3 tracking-wider">
-                NITW Students Only · Teams of 2–6
+                NITW Students Only · Teams of 6 including 1 female.
               </p>
             </div>
           </section>
@@ -363,14 +378,15 @@ export default function SIHPage() {
           <section className="flex flex-col items-center gap-8">
             <div className="flex flex-col items-center gap-2">
               <h2 className="text-3xl md:text-5xl font-pixel text-text-main uppercase tracking-widest">
-                Hackathon Timer
+                36 Hour Hackathon
               </h2>
-              <div className="h-1 w-32 bg-gradient-to-r from-secondary via-white to-primary" />
+              <div className="h-1 w-32 bg-gradient-to-r from-secondary via-white to-primary mx-auto" />
               <p className="text-white/40 font-pixel text-xl">
                 36 Hours of Pure Innovation
               </p>
             </div>
             <LiveTimer />
+            <LaunchCountdown />
           </section>
 
           {/* ── CHECKPOINTS ──────────────────────────────────────────────── */}
@@ -379,7 +395,7 @@ export default function SIHPage() {
               <h2 className="text-3xl md:text-5xl font-pixel text-text-main uppercase tracking-widest">
                 Checkpoints
               </h2>
-              <div className="h-1 w-32 bg-gradient-to-r from-primary via-white to-secondary" />
+              <div className="h-1 w-32 bg-gradient-to-r from-primary via-white to-secondary mx-auto" />
               <p className="text-white/40 font-pixel text-xl max-w-xl">
                 Three milestones. Three chances to prove your team&apos;s worth.
                 Details for each checkpoint will be announced soon.

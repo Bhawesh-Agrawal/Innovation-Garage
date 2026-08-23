@@ -1641,9 +1641,8 @@ const upcomingEvents: EventItem[] = [
         date: "SEPT 26 / 36H",
         description: "36 hours to build the impossible. Prizes up to 1.5 lakhs",
         image: "/events/SIH26.png",
-        link: "/sih",
-        adminEventId: "evt_1768853845084"
-
+        link: "/sih/register",
+        adminEventId: ""
     }
 ];
 
@@ -1780,7 +1779,11 @@ export default function Events() {
     }
     // 2. Fallback to static link if available
     if (eventItem.link) {
-      window.open(eventItem.link, "_blank");
+      if (eventItem.link.startsWith("/")) {
+        window.location.href = eventItem.link;
+      } else {
+        window.open(eventItem.link, "_blank");
+      }
       return;
     }
 
@@ -1918,7 +1921,11 @@ export default function Events() {
                                         }
                                     `}
                                 >
-                                    {isFetching && event.adminEventId ? "SYNCING..." : "REGISTER_>"}
+                                    {isFetching && event.adminEventId 
+                                        ? "SYNCING..." 
+                                        : event.title === "SIH Ignite" 
+                                            ? "REGISTRATION OPEN" 
+                                            : "REGISTER_>"}
                                 </button>
                             </div>
                         </div>

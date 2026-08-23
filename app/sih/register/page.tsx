@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
+import Script from "next/script";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
@@ -47,7 +48,6 @@ type GoogleUser = {
   name: string;
   email: string;
   picture: string;
-  idToken: string; // raw JWT, sent to backend for verification
 };
 
 const emptyMember = (): MemberData => ({
@@ -77,10 +77,10 @@ function decodeJwtPayload(token: string): Record<string, string> | null {
 // REUSABLE FORM FIELD COMPONENTS
 // ─────────────────────────────────────────────────────────────────────────────
 function FormInput({
-  label, required, type = "text", placeholder, value, onChange, hint, id,
+  label, required, type = "text", placeholder, value, onChange, hint, id, maxLength,
 }: {
   label: string; required?: boolean; type?: string; placeholder?: string;
-  value: string; onChange: (v: string) => void; hint?: string; id: string;
+  value: string; onChange: (v: string) => void; hint?: string; id: string; maxLength?: number;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -90,7 +90,7 @@ function FormInput({
       {hint && <p className="font-pixel text-sm text-white/40">{hint}</p>}
       <input
         id={id} type={type} required={required} placeholder={placeholder}
-        value={value} onChange={(e) => onChange(e.target.value)}
+        value={value} onChange={(e) => onChange(e.target.value)} maxLength={maxLength}
         className="bg-background-main border-2 border-white/20 text-text-main font-pixel text-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-white/20"
       />
     </div>
@@ -272,16 +272,16 @@ function MemberSection({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <FormInput id={`${label}-name`} label="Full Name" required={isRequired}
           placeholder="e.g. Ravi Kumar" value={data.fullName}
-          onChange={(v) => onChange("fullName", v)} />
+          onChange={(v) => onChange("fullName", v)} maxLength={50} />
         <FormInput id={`${label}-roll`} label="Roll Number" required={isRequired}
           placeholder="e.g. 22CS1001" value={data.rollNumber}
-          onChange={(v) => onChange("rollNumber", v)} />
+          onChange={(v) => onChange("rollNumber", v)} maxLength={20} />
         <FormInput id={`${label}-year`} label="Year of Study & Department" required={isRequired}
           placeholder="e.g. 3rd Year — CSE" value={data.yearAndDept}
-          onChange={(v) => onChange("yearAndDept", v)} />
+          onChange={(v) => onChange("yearAndDept", v)} maxLength={50} />
         <FormInput id={`${label}-email`} label="Email Address" required={isRequired}
           type="email" placeholder="e.g. 22cs1001@student.nitw.ac.in"
-          value={data.email} onChange={(v) => onChange("email", v)} />
+          value={data.email} onChange={(v) => onChange("email", v)} maxLength={80} />
       </div>
       {/* Gender */}
       <div className="flex flex-col gap-2">
@@ -321,7 +321,7 @@ function GoogleSignInStep({ onSignIn }: { onSignIn: (user: GoogleUser) => void }
   const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
   // Handle Google credential response
-  const handleCredential = useCallback((response: { credential: string }) => {
+  const handleCredential = useCallback(async (response: { credential: string }) => {
     const token = response.credential;
     const payload = decodeJwtPayload(token);
     if (!payload) {
@@ -345,49 +345,69 @@ function GoogleSignInStep({ onSignIn }: { onSignIn: (user: GoogleUser) => void }
     }
 
     setError("");
-    onSignIn({
-      name: payload.name || "",
-      email,
-      picture: payload.picture || "",
-      idToken: token,
-    });
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: token })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.error || "Authentication failed on server. Please try again.");
+        return;
+      }
+      onSignIn({
+        name: payload.name || "",
+        email,
+        picture: payload.picture || "",
+      });
+    } catch (e) {
+      setError("Network error during authentication. Please try again.");
+    }
   }, [onSignIn]);
 
-  // Load Google Identity Services script
-  useEffect(() => {
-    if (!CLIENT_ID) return;
-    const existing = document.getElementById("gsi-script");
-    if (existing) {
-      setScriptLoaded(true);
-      return;
-    }
-    const script = document.createElement("script");
-    script.id = "gsi-script";
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = () => setScriptLoaded(true);
-    document.head.appendChild(script);
-  }, [CLIENT_ID]);
+  // Load Google Identity Services script via next/script for reliable loading
+  // The button is rendered once the SDK is fully ready (polled below)
+  const onGsiLoad = useCallback(() => {
+    setScriptLoaded(true);
+  }, []);
 
-  // Initialize GSI and render button
+  // Wait for window.google.accounts.id to be ready, then initialize + render
   useEffect(() => {
-    if (!scriptLoaded || !CLIENT_ID || !window.google) return;
-    window.google.accounts.id.initialize({
-      client_id: CLIENT_ID,
-      callback: handleCredential,
-      hd: "*", // hint all hosted domains, backend enforces NITW only
-      context: "signin",
-      ux_mode: "popup",
-    });
-    window.google.accounts.id.renderButton(btnRef.current, {
-      type: "standard",
-      theme: "filled_black",
-      size: "large",
-      text: "signin_with",
-      shape: "rectangular",
-      width: 320,
-    });
+    if (!scriptLoaded || !CLIENT_ID) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 40; // 40 * 100ms = 4s max wait
+
+    function tryInit() {
+      if (cancelled) return;
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: CLIENT_ID,
+          callback: handleCredential,
+          hd: "*",
+          context: "signin",
+          ux_mode: "popup",
+        });
+        window.google.accounts.id.renderButton(btnRef.current, {
+          type: "standard",
+          theme: "filled_black",
+          size: "large",
+          text: "signin_with",
+          shape: "rectangular",
+          width: 320,
+        });
+        return;
+      }
+      attempts++;
+      if (attempts < MAX_ATTEMPTS) {
+        setTimeout(tryInit, 100);
+      }
+    }
+
+    tryInit();
+    return () => { cancelled = true; };
   }, [scriptLoaded, CLIENT_ID, handleCredential]);
 
   if (!CLIENT_ID) {
@@ -398,7 +418,21 @@ function GoogleSignInStep({ onSignIn }: { onSignIn: (user: GoogleUser) => void }
         </p>
         {process.env.NODE_ENV === "development" && (
           <button 
-            onClick={() => onSignIn({ name: "Dev User", email: "dev@nitw.ac.in", picture: "", idToken: "dev_bypass_token" })}
+            onClick={async () => {
+              const token = "dev_bypass_token";
+              try {
+                const res = await fetch("/api/auth/login", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ idToken: token })
+                });
+                if (res.ok) {
+                  onSignIn({ name: "Dev User", email: "dev@nitw.ac.in", picture: "" });
+                }
+              } catch (e) {
+                console.error(e);
+              }
+            }}
             className="px-4 py-2 bg-white/10 text-white font-pixel text-sm hover:bg-white/20 transition-colors"
           >
             [DEV MODE] Skip OAuth
@@ -410,6 +444,15 @@ function GoogleSignInStep({ onSignIn }: { onSignIn: (user: GoogleUser) => void }
 
   return (
     <div className="flex flex-col items-center gap-6 py-8">
+      {/* Load Google Identity Services SDK */}
+      {CLIENT_ID && (
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="afterInteractive"
+          onLoad={onGsiLoad}
+        />
+      )}
+
       {/* Shield icon */}
       <div className="relative">
         <div className="absolute inset-0 bg-secondary/10 blur-2xl rounded-full" />
@@ -428,7 +471,7 @@ function GoogleSignInStep({ onSignIn }: { onSignIn: (user: GoogleUser) => void }
       </div>
 
       {/* Google sign-in button rendered here */}
-      <div ref={btnRef} id="google-signin-btn" className="flex justify-center" />
+      <div ref={btnRef} id="google-signin-btn" className="flex justify-center min-h-[44px]" />
 
       {!scriptLoaded && (
         <div className="flex items-center gap-2 text-white/30 font-pixel text-lg">
@@ -474,6 +517,25 @@ function GoogleSignInStep({ onSignIn }: { onSignIn: (user: GoogleUser) => void }
 export default function SIHRegisterPage() {
   // Auth state
   const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+
+  // Restore session from HttpOnly cookie on page refresh
+  useEffect(() => {
+    async function restoreSession() {
+      try {
+        const res = await fetch("/api/auth/session");
+        const data = await res.json();
+        if (res.ok && data.success && data.user) {
+          setGoogleUser(data.user);
+        }
+      } catch {
+        // Silent fail — user will see the sign-in gate
+      } finally {
+        setSessionLoading(false);
+      }
+    }
+    restoreSession();
+  }, []);
 
   // Section 2 — Team Details
   const [teamName, setTeamName] = useState("");
@@ -487,9 +549,6 @@ export default function SIHRegisterPage() {
   // Sections 4–8 — Team Members 1–5
   const [members, setMembers] = useState<MemberData[]>(Array.from({ length: 5 }, emptyMember));
 
-  // Section 9 — Theme
-  const [theme, setTheme] = useState("");
-
   // Section 10 — Problem Statements
   const [ps1Type, setPs1Type] = useState("");
   const [ps1Id, setPs1Id] = useState("");
@@ -498,19 +557,89 @@ export default function SIHRegisterPage() {
   const [inspiration, setInspiration] = useState("");
   const [approach, setApproach] = useState("");
 
-  // BOM PDF (hardware teams)
-  const [bomFile, setBomFile] = useState<File | null>(null);
-  const [bomError, setBomError] = useState("");
+  // BOM Link (hardware teams)
+  const [bomLink, setBomLink] = useState("");
 
-  // Section 11 — Additional
-  const [facultyMentor, setFacultyMentor] = useState("");
+  // Consent & Declaration
   const [consent, setConsent] = useState(false);
+  const [declaration, setDeclaration] = useState(false);
+  const [facultyMentor, setFacultyMentor] = useState("");
 
   // Form state
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Toast notification state
+  const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
 
+  // Toast automatic auto-dismiss
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  // Ref to skip initial state save to localStorage
+  const draftMounted = useRef(false);
+
+  // ── Draft loading ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = localStorage.getItem("sih_form_draft");
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft.teamName) setTeamName(draft.teamName);
+        if (draft.track) setTrack(draft.track);
+        if (draft.leader) setLeader(draft.leader);
+        if (draft.members && Array.isArray(draft.members)) setMembers(draft.members);
+        if (draft.ps1Id) setPs1Id(draft.ps1Id);
+        if (draft.ps1Type) setPs1Type(draft.ps1Type);
+        if (draft.ps2Id) setPs2Id(draft.ps2Id);
+        if (draft.ps2Type) setPs2Type(draft.ps2Type);
+        if (draft.inspiration) setInspiration(draft.inspiration);
+        if (draft.approach) setApproach(draft.approach);
+        if (draft.bomLink) setBomLink(draft.bomLink);
+        if (draft.consent) setConsent(draft.consent);
+        if (draft.declaration) setDeclaration(draft.declaration);
+      }
+    } catch (e) {
+      console.error("Error loading draft from localStorage:", e);
+    }
+  }, []);
+
+  // ── Draft saving ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!draftMounted.current) {
+      draftMounted.current = true;
+      return;
+    }
+    try {
+      const draft = {
+        teamName,
+        track,
+        leader,
+        members,
+        ps1Id,
+        ps1Type,
+        ps2Id,
+        ps2Type,
+        inspiration,
+        approach,
+        bomLink,
+        consent,
+        declaration,
+      };
+      localStorage.setItem("sih_form_draft", JSON.stringify(draft));
+    } catch (e) {
+      console.error("Error saving draft to localStorage:", e);
+    }
+  }, [
+    teamName, track, leader, members, ps1Id, ps1Type, ps2Id, ps2Type,
+    inspiration, approach, bomLink, consent, declaration
+  ]);
 
   // reCAPTCHA removed — not required
 
@@ -525,29 +654,46 @@ export default function SIHRegisterPage() {
     });
   };
 
-  const handleBomFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    setBomError("");
-    if (!file) return;
-    if (file.type !== "application/pdf") { setBomError("Only PDF files are accepted."); setBomFile(null); return; }
-    if (file.size > 15 * 1024 * 1024) { setBomError("File size must be under 15 MB."); setBomFile(null); return; }
-    setBomFile(file);
-  };
-
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!googleUser) return;
-    if (!consent) { setSubmitResult({ success: false, message: "You must give consent to proceed." }); return; }
-    if (isHardware && !bomFile) {
-      setSubmitResult({ success: false, message: "Hardware teams must upload a Bill of Materials (BOM) PDF." });
+
+    const showError = (msg: string) => {
+      setSubmitResult({ success: false, message: msg });
+      setToast({ message: msg, type: "error" });
+    };
+
+    if (!consent) { showError("You must give consent to proceed."); return; }
+    if (!declaration) { showError("You must check the declaration to proceed."); return; }
+
+    if (isHardware && !bomLink) {
+      showError("Hardware teams must provide a Google Drive link to their BOM PDF.");
       return;
+    }
+    if (isHardware && bomLink && !bomLink.startsWith("http://") && !bomLink.startsWith("https://")) {
+      showError("Please provide a valid URL (starting with http:// or https://) for the BOM link.");
+      return;
+    }
+
+    // Validate leader email format
+    if (!leader.email.endsWith("@student.nitw.ac.in")) {
+      showError("Team Leader email must end with @student.nitw.ac.in");
+      return;
+    }
+
+    // Validate members' emails format
+    for (let i = 0; i < members.length; i++) {
+      if (!members[i].email.endsWith("@student.nitw.ac.in")) {
+        showError(`Team Member ${i + 1} email must end with @student.nitw.ac.in`);
+        return;
+      }
     }
 
     // Validate at least one female member
     const hasAnyFemale = leader.gender === "Female" || members.some(m => m.gender === "Female");
     if (!hasAnyFemale) {
-      setSubmitResult({ success: false, message: "As per SIH guidelines, your team must have at least one female member." });
+      showError("As per SIH guidelines, your team must have at least one female member.");
       return;
     }
 
@@ -557,8 +703,8 @@ export default function SIHRegisterPage() {
     try {
       const formData = new FormData();
 
-      // Auth token
-      formData.append("idToken", googleUser.idToken);
+      // Auth token is now handled via HttpCookie, no need to append here
+      // formData.append("idToken", googleUser.idToken);
 
       // Honeypot (real users leave this empty — bots fill it)
       // Note: this field is appended as empty intentionally
@@ -587,8 +733,7 @@ export default function SIHRegisterPage() {
         formData.append(`member${i + 1}Gender`, m.gender);
       }
 
-      // Theme & PS
-      formData.append("theme", theme);
+      // PS & Details
       formData.append("ps1Type", ps1Type);
       formData.append("ps1Id", ps1Id);
       formData.append("ps2Type", ps2Type);
@@ -597,11 +742,14 @@ export default function SIHRegisterPage() {
       formData.append("approach", approach);
 
       // BOM
-      if (bomFile) formData.append("bom", bomFile);
+      if (isHardware && bomLink) {
+        formData.append("bomLink", bomLink);
+      }
 
       // Additional
       formData.append("facultyMentor", facultyMentor);
       formData.append("consent", "Yes");
+      formData.append("declaration", "Yes");
 
       const res = await fetch("/api/sih-register", {
         method: "POST",
@@ -612,16 +760,20 @@ export default function SIHRegisterPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
+        // Clear draft on successful submission
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("sih_form_draft");
+        }
         setSubmitResult({
           success: true,
-          message: "🎉 Registration successful! Your team has been registered for IGnite36 Hackathon 2025 [SIH]. Good luck!",
+          message: "Congrats your registration is successful, we will communicate with you if your team is selected. Till then, ensure regular to check website for any update, and also join the whatsapp group https://chat.whatsapp.com/IZ2kBqx76QO8DyIdo1HF3U?s=cl&p=a&ilr=4 for any updates ( Only leader ). Also check the rules and regulation in the /sih page and also read the Handbook provided ( a pdf will be provided later in website ) just keep coming soon.",
         });
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
-        setSubmitResult({ success: false, message: data.error || "Registration failed. Please try again." });
+        showError(data.error || "Registration failed. Please try again.");
       }
     } catch {
-      setSubmitResult({ success: false, message: "Network error. Please check your connection and try again." });
+      showError("Network error. Please check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -636,16 +788,63 @@ export default function SIHRegisterPage() {
         <Navbar />
         <main className="flex-grow relative w-full bg-background-main text-text-main font-pixel min-h-screen flex items-center justify-center">
           <div className="absolute inset-0 bg-[image:var(--bg-grid-radial)] bg-[size:32px_32px] pointer-events-none opacity-20 fixed" />
-          <div className="relative z-10 max-w-2xl mx-auto px-6 py-24 flex flex-col items-center gap-8 text-center">
+          <div className="relative z-10 max-w-2xl mx-auto px-6 py-16 flex flex-col items-center gap-8 text-center bg-surface-card border-2 border-primary/30 p-8 my-12">
             <div className="relative">
               <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
               <span className="material-symbols-outlined text-8xl text-primary relative">task_alt</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-pixel text-text-main uppercase">
-              Registration <span className="text-primary">Complete!</span>
+            <h1 className="text-3xl md:text-5xl font-pixel text-text-main uppercase tracking-wider">
+              Registration Successful
             </h1>
-            <p className="text-xl font-pixel text-white/60 leading-relaxed">{submitResult.message}</p>
-            <Link href="/sih" className="inline-flex items-center gap-2 bg-primary text-white font-pixel text-2xl uppercase tracking-widest px-8 py-4 hover:bg-primary/90 transition-colors">
+            
+            <div className="flex flex-col gap-6 text-left w-full border-t border-b border-white/10 py-6 my-2">
+              <p className="text-xl text-white leading-relaxed">
+                Congrats your registration is successful, we will communicate with you if your team is selected.
+              </p>
+              
+              <div className="flex flex-col gap-4">
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-secondary mt-0.5">chevron_right</span>
+                  <p className="text-lg text-white/70 leading-relaxed">
+                    Till then, check the website regularly for any updates.
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-secondary mt-0.5">group</span>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-lg text-white/70 leading-relaxed">
+                      Join the WhatsApp group for any updates (Only team leaders):
+                    </p>
+                    <a 
+                      href="https://chat.whatsapp.com/IZ2kBqx76QO8DyIdo1HF3U?s=cl&p=a&ilr=4" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-secondary hover:underline text-lg break-all font-sans"
+                    >
+                      https://chat.whatsapp.com/IZ2kBqx76QO8DyIdo1HF3U?s=cl&p=a&ilr=4
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-secondary mt-0.5">gavel</span>
+                  <p className="text-lg text-white/70 leading-relaxed">
+                    Check the rules and regulations in the{" "}
+                    <Link href="/sih" className="text-secondary hover:underline">/sih page</Link>.
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-secondary mt-0.5">menu_book</span>
+                  <p className="text-lg text-white/70 leading-relaxed">
+                    Read the Handbook provided (a PDF will be provided later in the website) - <span className="text-primary uppercase tracking-widest text-base">Coming Soon</span>.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Link href="/sih" className="inline-flex items-center gap-2 bg-primary text-white font-pixel text-2xl uppercase tracking-widest px-8 py-4 hover:bg-primary/90 transition-all duration-200 shadow-[4px_4px_0px_0px_rgba(215,38,255,0.6)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-none active:translate-x-0 active:translate-y-0">
               <span className="material-symbols-outlined">arrow_back</span>
               Back to SIH Page
             </Link>
@@ -679,12 +878,12 @@ export default function SIHRegisterPage() {
             </div>
             <h1 className="text-3xl md:text-5xl font-pixel text-text-main uppercase leading-tight">
               IGnite<span className="text-primary">36</span>{" "}
-              <span className="text-secondary">SIH 2025</span>
+              <span className="text-secondary">SIH 2026</span>
             </h1>
             <p className="text-white/40 font-pixel text-lg max-w-xl leading-relaxed">
               Please complete this form carefully. Fields marked{" "}
               <span className="text-primary">*</span> are required.
-              For PSs visit{" "}
+              For Problem Statement, visit{" "}
               <a href="https://sih.gov.in/" target="_blank" rel="noopener noreferrer" className="text-secondary hover:underline">sih.gov.in</a>
             </p>
             <Link href="/sih" className="inline-flex items-center gap-2 text-white/40 hover:text-primary font-pixel text-lg transition-colors">
@@ -695,9 +894,16 @@ export default function SIHRegisterPage() {
 
           {/* ── STEP 1: GOOGLE SIGN-IN ─────────────────────────────────────── */}
           {!googleUser ? (
-            <div className="bg-surface-card border-2 border-secondary/30 p-6 md:p-10">
-              <GoogleSignInStep onSignIn={setGoogleUser} />
-            </div>
+            sessionLoading ? (
+              <div className="bg-surface-card border-2 border-secondary/30 p-6 md:p-10 flex flex-col items-center gap-4 py-16">
+                <span className="material-symbols-outlined animate-spin text-4xl text-primary">progress_activity</span>
+                <p className="font-pixel text-xl text-white/50">Restoring session...</p>
+              </div>
+            ) : (
+              <div className="bg-surface-card border-2 border-secondary/30 p-6 md:p-10">
+                <GoogleSignInStep onSignIn={setGoogleUser} />
+              </div>
+            )
           ) : (
             <>
               {/* Signed-in badge */}
@@ -734,7 +940,7 @@ export default function SIHRegisterPage() {
                   <SectionHeader number="01" title="Team Details"
                     subtitle="Exactly 6 members (1 leader + 5 members) required. At least one female member is mandatory." />
                   <FormInput id="team-name" label="Team Name" required
-                    placeholder="e.g. CodeCrafters" value={teamName} onChange={setTeamName} />
+                    placeholder="e.g. CodeCrafters" value={teamName} onChange={setTeamName} maxLength={80} />
                 </div>
 
                 {/* ── SECTION 3: TEAM LEADER ───────────────────────────────── */}
@@ -743,17 +949,17 @@ export default function SIHRegisterPage() {
                       subtitle="The team leader is the primary point of contact." />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <FormInput id="leader-name" label="Full Name" required placeholder="e.g. Priya Sharma"
-                        value={leader.fullName} onChange={(v) => setLeader((p) => ({ ...p, fullName: v }))} />
+                        value={leader.fullName} onChange={(v) => setLeader((p) => ({ ...p, fullName: v }))} maxLength={50} />
                       <FormInput id="leader-roll" label="Roll Number" required placeholder="e.g. 22CS1001"
-                        value={leader.rollNumber} onChange={(v) => setLeader((p) => ({ ...p, rollNumber: v }))} />
+                        value={leader.rollNumber} onChange={(v) => setLeader((p) => ({ ...p, rollNumber: v }))} maxLength={20} />
                       <FormInput id="leader-year" label="Year & Department" required placeholder="e.g. 3rd Year — CSE"
-                        value={leader.yearAndDept} onChange={(v) => setLeader((p) => ({ ...p, yearAndDept: v }))} />
+                        value={leader.yearAndDept} onChange={(v) => setLeader((p) => ({ ...p, yearAndDept: v }))} maxLength={50} />
                       <FormInput id="leader-email" label="Email Address" required type="email"
                         placeholder="e.g. 22cs1001@student.nitw.ac.in"
-                        value={leader.email} onChange={(v) => setLeader((p) => ({ ...p, email: v }))} />
+                        value={leader.email} onChange={(v) => setLeader((p) => ({ ...p, email: v }))} maxLength={80} />
                       <FormInput id="leader-phone" label="Phone Number" required type="tel"
                         placeholder="e.g. 9876543210"
-                        value={leader.phone} onChange={(v) => setLeader((p) => ({ ...p, phone: v }))} />
+                        value={leader.phone} onChange={(v) => setLeader((p) => ({ ...p, phone: v }))} maxLength={10} />
                     </div>
                     {/* Leader Gender */}
                     <div className="flex flex-col gap-2">
@@ -786,17 +992,14 @@ export default function SIHRegisterPage() {
                   />
                 ))}
 
-                {/* ── SECTION 9: THEME & TRACK ──────────────────────────────── */}
+                {/* ── SECTION 9: TRACK SELECTION ────────────────────────────── */}
                 <div className="bg-surface-card border-2 border-white/10 p-6 flex flex-col gap-5">
-                  <SectionHeader number="08" title="Track & Theme Selection"
-                    subtitle="Choose your track (Hardware/Software) and theme." />
+                  <SectionHeader number="08" title="Track Selection"
+                    subtitle="Choose your track (Hardware/Software)." />
                   <FormRadioGroup label="Track Selection" required name="track"
                     options={[{ label: "Software", value: "Software" }, { label: "Hardware", value: "Hardware" }]}
                     value={track} onChange={(v: string) => setTrack(v as "Software" | "Hardware")}
                     hint="This determines which problem statements you can choose." />
-                  
-                  <FormSelect id="theme" label="Choose a Theme" required
-                    options={THEMES} value={theme} onChange={setTheme} />
                 </div>
 
                 {/* ── SECTION 10: PROBLEM STATEMENTS ───────────────────────── */}
@@ -839,7 +1042,7 @@ export default function SIHRegisterPage() {
                         What inspired your team?<span className="text-primary ml-1">*</span>
                       </label>
                       <p className="font-pixel text-sm text-white/40">Describe your initial idea(s). Separate answers if two PSs selected.</p>
-                      <textarea id="inspiration" required rows={4}
+                      <textarea id="inspiration" required rows={4} maxLength={2000}
                         placeholder="Describe your initial idea(s)..." value={inspiration}
                         onChange={(e) => setInspiration(e.target.value)}
                         className="bg-background-main border-2 border-white/20 text-text-main font-pixel text-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-white/20 resize-none" />
@@ -849,7 +1052,7 @@ export default function SIHRegisterPage() {
                         Approach & Technologies<span className="text-primary ml-1">*</span>
                       </label>
                       <p className="font-pixel text-sm text-white/40">Mention tools/technologies. Separate answers if two PSs.</p>
-                      <textarea id="approach" required rows={4}
+                      <textarea id="approach" required rows={4} maxLength={2000}
                         placeholder="e.g. React + Node.js + TensorFlow for PS1..." value={approach}
                         onChange={(e) => setApproach(e.target.value)}
                         className="bg-background-main border-2 border-white/20 text-text-main font-pixel text-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-white/20 resize-none" />
@@ -858,48 +1061,35 @@ export default function SIHRegisterPage() {
                   )}
                 </div>
 
-                {/* ── BOM UPLOAD ────────────────────────────────────────────── */}
+                {/* ── BOM LINK ────────────────────────────────────────────── */}
                 {isHardware && (
                   <div className="bg-surface-card border-2 border-primary/40 p-6 flex flex-col gap-5">
                     <SectionHeader number="HW" title="Bill of Materials (BOM)"
-                      subtitle="Required for Hardware PSs. Upload your BOM as a PDF (max 15 MB)." />
-                    <label htmlFor="bom-upload" className={`flex flex-col items-center justify-center gap-3 border-2 border-dashed p-8 cursor-pointer transition-colors ${bomFile ? "border-primary bg-primary/5" : "border-white/20 hover:border-primary/50"
-                      }`}>
-                      <span className="material-symbols-outlined text-4xl text-white/40">
-                        {bomFile ? "description" : "upload_file"}
-                      </span>
-                      {bomFile ? (
-                        <div className="text-center">
-                          <p className="font-pixel text-primary text-xl">{bomFile.name}</p>
-                          <p className="font-pixel text-white/40 text-lg">{(bomFile.size / (1024 * 1024)).toFixed(2)} MB</p>
-                        </div>
-                      ) : (
-                        <div className="text-center">
-                          <p className="font-pixel text-white/50 text-xl">Click to upload BOM PDF</p>
-                          <p className="font-pixel text-white/30 text-lg">PDF only · max 15 MB</p>
-                        </div>
-                      )}
-                      <input id="bom-upload" type="file" accept="application/pdf" className="sr-only" onChange={handleBomFile} />
-                    </label>
-                    {bomError && <p className="font-pixel text-red-400 text-lg flex items-center gap-2">
-                      <span className="material-symbols-outlined text-xl">error</span>{bomError}
-                    </p>}
-                    {bomFile && (
-                      <button type="button" onClick={() => setBomFile(null)}
-                        className="self-start font-pixel text-lg text-white/40 hover:text-red-400 transition-colors flex items-center gap-1">
-                        <span className="material-symbols-outlined text-xl">close</span>Remove file
-                      </button>
-                    )}
+                      subtitle="Required for Hardware PSs. Please provide a viewable Google Drive link to your BOM PDF." />
+                    
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="bom-link" className="font-pixel text-xl text-text-main uppercase tracking-wider">
+                        Google Drive Link to BOM PDF<span className="text-primary ml-1">*</span>
+                      </label>
+                      <p className="font-pixel text-sm text-white/40">
+                        Please add the PDF to Google Drive and ensure anyone with the link is able to view it. If the access is not provided, the registration can be rejected.
+                      </p>
+                      <input
+                        id="bom-link"
+                        type="url"
+                        required
+                        placeholder="e.g. https://drive.google.com/file/d/.../view?usp=sharing"
+                        value={bomLink}
+                        onChange={(e) => setBomLink(e.target.value)}
+                        className="bg-background-main border-2 border-white/20 text-text-main font-pixel text-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-white/20"
+                      />
+                    </div>
                   </div>
                 )}
 
-                {/* ── SECTION 11: ADDITIONAL ────────────────────────────────── */}
+                {/* ── CONSENT & DECLARATION ────────────────────────────────── */}
                 <div className="bg-surface-card border-2 border-white/10 p-6 flex flex-col gap-5">
-                    <SectionHeader number="11" title="Additional Details & Consent" />
-                    <FormInput id="faculty-mentor" label="Faculty Mentor (if any)"
-                      placeholder="e.g. Dr. Ravi Kumar, Dept. of CSE"
-                      value={facultyMentor} onChange={setFacultyMentor}
-                      hint="Full name and department. Leave blank if none." />
+                    {/* Consent checkbox */}
                     <label className="flex items-start gap-4 cursor-pointer group">
                       <div onClick={() => setConsent((v) => !v)}
                         className={`w-6 h-6 border-2 shrink-0 mt-0.5 flex items-center justify-center transition-colors cursor-pointer ${consent ? "bg-primary border-primary" : "border-white/30 group-hover:border-primary/50"
@@ -912,7 +1102,18 @@ export default function SIHRegisterPage() {
                       </span>
                     </label>
 
-
+                    {/* Declaration checkbox */}
+                    <label className="flex items-start gap-4 cursor-pointer group">
+                      <div onClick={() => setDeclaration((v) => !v)}
+                        className={`w-6 h-6 border-2 shrink-0 mt-0.5 flex items-center justify-center transition-colors cursor-pointer ${declaration ? "bg-primary border-primary" : "border-white/30 group-hover:border-primary/50"
+                          }`}>
+                        {declaration && <span className="material-symbols-outlined text-white text-base">check</span>}
+                      </div>
+                      <span className="font-pixel text-xl text-white/70 leading-relaxed">
+                        All the information provided are correct, if any information provided is found to be incorrect, the registration can be terminated by the organizer.
+                        <span className="text-primary ml-1">*</span>
+                      </span>
+                    </label>
                   </div>
 
                 {/* ── HONEYPOT (hidden from real users, traps bots) ─────────── */}
@@ -931,7 +1132,7 @@ export default function SIHRegisterPage() {
 
                 {/* ── SUBMIT ────────────────────────────────────────────────── */}
                 <div className="flex flex-col items-center gap-4">
-                    <button type="submit" disabled={submitting || !consent} id="sih-submit-btn"
+                    <button type="submit" disabled={submitting || !consent || !declaration} id="sih-submit-btn"
                       className="group w-full md:w-auto inline-flex items-center justify-center gap-3 bg-primary text-white font-pixel text-2xl md:text-3xl uppercase tracking-widest px-12 py-5 hover:bg-primary/90 transition-all duration-200 shadow-[6px_6px_0px_0px_rgba(215,38,255,0.6)] hover:shadow-[8px_8px_0px_0px_rgba(215,38,255,0.8)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-none active:translate-x-0 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-x-0">
                       {submitting ? (
                         <><span className="material-symbols-outlined animate-spin text-3xl">progress_activity</span>Submitting...</>
@@ -947,6 +1148,31 @@ export default function SIHRegisterPage() {
             </>
           )}
         </div>
+
+        {/* ── TOAST NOTIFICATION ─────────────────────────────────────────── */}
+        {toast && (
+          <div className={`fixed bottom-6 right-6 z-50 p-4 border-2 font-pixel text-lg flex items-start gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] max-w-sm ${
+            toast.type === "error" 
+              ? "bg-[#1f0b0d] border-red-500 text-red-300" 
+              : "bg-[#0b1f0c] border-green-500 text-green-300"
+          }`}>
+            <span className="material-symbols-outlined text-2xl shrink-0 mt-0.5">
+              {toast.type === "error" ? "error" : "check_circle"}
+            </span>
+            <div className="flex-grow flex flex-col gap-1">
+              <p className="font-bold uppercase tracking-wider">
+                {toast.type === "error" ? "System Error" : "Success"}
+              </p>
+              <p className="text-white/80 leading-snug">{toast.message}</p>
+            </div>
+            <button 
+              onClick={() => setToast(null)} 
+              className="text-white/40 hover:text-white transition-colors"
+            >
+              <span className="material-symbols-outlined text-base">close</span>
+            </button>
+          </div>
+        )}
       </main>
       <Footer />
     </>

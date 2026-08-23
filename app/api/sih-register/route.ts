@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
+import { verifyGoogleToken } from "@/lib/verifyGoogleToken";
+import { SIH_PROBLEM_STATEMENTS } from "@/lib/sihProblemStatements";
 
 export const runtime = "nodejs";
 
@@ -42,9 +44,14 @@ export async function OPTIONS(req: Request) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RATE LIMITING — IP based + Google account based
+//
+// IMPORTANT: Account rate limit is ONLY committed AFTER the Google Sheet write
+// succeeds. This prevents the "locked out but no data" bug where a user gets
+// rate-limited on a failed submission.
 // ─────────────────────────────────────────────────────────────────────────────
 const ipRateMap = new Map<string, { count: number; resetAt: number }>();
 const accountRateMap = new Map<string, { count: number; resetAt: number }>();
+const pendingRegistrations = new Set<string>();
 const IP_LIMIT = 5;
 const ACCOUNT_LIMIT = 1; // one registration per Google account
 const WINDOW_MS = 60 * 60 * 1000; // 1 hour
@@ -64,63 +71,22 @@ function checkIpLimit(ip: string): boolean {
   return true;
 }
 
-function checkAccountLimit(googleSub: string): boolean {
-  if (IS_DEV) return true; // skip in dev — allow unlimited test submissions
+function isAccountRateLimited(googleSub: string): boolean {
+  if (IS_DEV) return false; // skip in dev — allow unlimited test submissions
+  const now = Date.now();
+  const entry = accountRateMap.get(googleSub);
+  if (!entry || now > entry.resetAt) return false;
+  return entry.count >= ACCOUNT_LIMIT;
+}
+
+function commitAccountRateLimit(googleSub: string): void {
+  if (IS_DEV) return;
   const now = Date.now();
   const entry = accountRateMap.get(googleSub);
   if (!entry || now > entry.resetAt) {
     accountRateMap.set(googleSub, { count: 1, resetAt: now + WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= ACCOUNT_LIMIT) return false;
-  entry.count++;
-  return true;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GOOGLE ID TOKEN VERIFICATION (via Google's tokeninfo endpoint)
-// No private key required — uses Google's public key infrastructure.
-// ─────────────────────────────────────────────────────────────────────────────
-type GoogleTokenPayload = {
-  sub: string;       // Unique Google user ID
-  email: string;
-  email_verified: boolean;
-  hd?: string;       // Hosted domain (e.g. "nitw.ac.in")
-  name: string;
-  picture?: string;
-  exp: number;       // Expiration timestamp (seconds)
-  aud: string;       // Must match our Client ID
-  iss: string;       // Must be Google
-};
-
-async function verifyGoogleToken(token: string): Promise<GoogleTokenPayload | null> {
-  if (!token) return null;
-  try {
-    const res = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`,
-      { next: { revalidate: 0 } }
-    );
-    if (!res.ok) return null;
-    const payload = await res.json() as GoogleTokenPayload;
-
-    // Verify issuer
-    if (!["accounts.google.com", "https://accounts.google.com"].includes(payload.iss)) {
-      return null;
-    }
-
-    // Verify audience matches our Client ID (if configured)
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (clientId && payload.aud !== clientId) {
-      console.error("Token audience mismatch:", payload.aud, "expected:", clientId);
-      return null;
-    }
-
-    // Verify email is confirmed by Google
-    if (!payload.email_verified) return null;
-
-    return payload;
-  } catch {
-    return null;
+  } else {
+    entry.count++;
   }
 }
 
@@ -129,12 +95,27 @@ async function verifyGoogleToken(token: string): Promise<GoogleTokenPayload | nu
 // ─────────────────────────────────────────────────────────────────────────────
 const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 const isValidPhone = (p: string) => /^[6-9]\d{9}$/.test(p.replace(/\s/g, ""));
-// Strip all HTML tags + dangerous chars (prevent XSS / injection)
-const sanitize = (s: string) =>
-  s.replace(/<[^>]*>/g, "").replace(/[<>"'`]/g, "").trim().slice(0, 2000);
+// Strip all HTML tags + dangerous chars (prevent XSS / injection) and escape formula triggers (=, +, -, @)
+const sanitize = (s: string) => {
+  let cleaned = s.replace(/<[^>]*>/g, "").replace(/[<>"'`]/g, "").trim().slice(0, 2000);
+  if (cleaned.startsWith("=") || cleaned.startsWith("+") || cleaned.startsWith("-") || cleaned.startsWith("@")) {
+    cleaned = "'" + cleaned;
+  }
+  return cleaned;
+};
 
 function err(message: string, status = 400) {
   return NextResponse.json({ success: false, error: message }, { status });
+}
+
+function parseCookies(cookieHeader: string | null): Record<string, string> {
+  if (!cookieHeader) return {};
+  return Object.fromEntries(
+    cookieHeader.split("; ").map((c) => {
+      const i = c.indexOf("=");
+      return [c.slice(0, i), c.slice(i + 1)];
+    })
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -145,11 +126,11 @@ function getGoogleAuth() {
   if (!jsonString) {
     throw new Error("Missing GOOGLE_SERVICE_ACCOUNT_JSON in environment variables.");
   }
-  
+
   let credentials;
   try {
     credentials = JSON.parse(jsonString);
-  } catch (e) {
+  } catch {
     throw new Error("Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON. Ensure it is valid JSON.");
   }
 
@@ -166,17 +147,16 @@ function getGoogleAuth() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DIRECT GOOGLE APIS HELPERS
+// GOOGLE DRIVE HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 async function uploadBomToDrive(file: File, teamName: string): Promise<string> {
   const auth = getGoogleAuth();
   const drive = google.drive({ version: "v3", auth });
   const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-  
+
   if (!folderId) throw new Error("Missing GOOGLE_DRIVE_FOLDER_ID");
 
   const buffer = await file.arrayBuffer();
-  // Using Buffer to construct a stream
   const { Readable } = require("stream");
   const stream = Readable.from(Buffer.from(buffer));
 
@@ -191,27 +171,67 @@ async function uploadBomToDrive(file: File, teamName: string): Promise<string> {
     },
     fields: "id, webViewLink",
   });
-  
-  // Set permissions so anyone with the link can view (optional, but useful if organisers want to click it directly)
+
   if (res.data.id) {
     try {
       await drive.permissions.create({
         fileId: res.data.id,
-        requestBody: { role: "reader", type: "anyone" }
+        requestBody: { role: "reader", type: "anyone" },
       });
-    } catch(e) {
-      console.warn("Failed to set public permission on PDF, it will remain private to the Service Account/Folder.", e);
+    } catch (e) {
+      console.warn(
+        "Failed to set public permission on PDF, it will remain private to the Service Account/Folder.",
+        e
+      );
     }
   }
 
   return res.data.webViewLink || "";
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GOOGLE SHEET HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+async function checkDuplicateEmail(email: string): Promise<boolean> {
+  const auth = getGoogleAuth();
+  const sheets = google.sheets({ version: "v4", auth });
+  const sheetId = process.env.GOOGLE_SHEET_ID;
+  if (!sheetId) return false;
+
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range: "A:Z", // Read all columns
+    });
+
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) return false;
+
+    // Find the column index for "Authenticated Email" from the header row
+    const headers = rows[0];
+    const emailColIdx = headers.indexOf("Authenticated Email");
+    if (emailColIdx === -1) return false;
+
+    // Check all data rows for a matching email
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (row[emailColIdx] === email) return true;
+    }
+
+    return false;
+  } catch (e) {
+    console.error("Error checking duplicate email:", e);
+    // On error, allow submission (fail open for duplicate check —
+    // the in-memory rate limit is the primary guard)
+    return false;
+  }
+}
+
 async function submitToSheet(rowData: Record<string, string>): Promise<void> {
   const auth = getGoogleAuth();
   const sheets = google.sheets({ version: "v4", auth });
   const sheetId = process.env.GOOGLE_SHEET_ID;
-  
+
   if (!sheetId) throw new Error("Missing GOOGLE_SHEET_ID");
 
   const keys = Object.keys(rowData);
@@ -284,17 +304,15 @@ export async function POST(req: Request) {
   // ── 4. HONEYPOT CHECK (silent discard for bots) ──────────────────────────
   const honeypot = get("website");
   if (honeypot) {
-    // Bot filled the hidden field — silently pretend success
     console.warn(`Honeypot triggered from IP: ${ip}`);
     return NextResponse.json({ success: true }, { status: 200, headers });
   }
 
   // ── 5. EXTRACT SECURITY TOKENS ───────────────────────────────────────────
-  const idToken = get("idToken");
+  const cookies = parseCookies(req.headers.get("cookie"));
+  const idToken = cookies["sih_auth_token"];
 
-  // ── 6. (Removed reCAPTCHA) ───────────────────────────────────────────────
-
-  // ── 7. GOOGLE ID TOKEN VERIFICATION ─────────────────────────────────────
+  // ── 6. GOOGLE ID TOKEN VERIFICATION ─────────────────────────────────────
   let tokenPayload = null;
   if (process.env.NODE_ENV === "development" && idToken === "dev_bypass_token") {
     tokenPayload = {
@@ -305,7 +323,7 @@ export async function POST(req: Request) {
       name: "Dev User",
       exp: Math.floor(Date.now() / 1000) + 3600,
       aud: "dev",
-      iss: "accounts.google.com"
+      iss: "accounts.google.com",
     } as any;
   } else {
     tokenPayload = await verifyGoogleToken(idToken);
@@ -322,7 +340,7 @@ export async function POST(req: Request) {
     );
   }
 
-  // ── 8. TOKEN EXPIRATION CHECK ────────────────────────────────────────────
+  // ── 7. TOKEN EXPIRATION CHECK ────────────────────────────────────────────
   const nowSeconds = Math.floor(Date.now() / 1000);
   if (nowSeconds > tokenPayload.exp) {
     return NextResponse.json(
@@ -335,9 +353,9 @@ export async function POST(req: Request) {
     );
   }
 
-  // ── 9. NITW DOMAIN CHECK ─────────────────────────────────────────────────
+  // ── 8. NITW DOMAIN CHECK ─────────────────────────────────────────────────
   const emailDomain = tokenPayload.email.split("@")[1] || "";
-  const hdClaim = tokenPayload.hd || emailDomain; // `hd` is present for GSuite/Workspace accounts
+  const hdClaim = tokenPayload.hd || emailDomain;
 
   const isNitwDomain =
     ALLOWED_NITW_DOMAINS.includes(emailDomain) ||
@@ -353,33 +371,24 @@ export async function POST(req: Request) {
     );
   }
 
-  // ── 10. PER-ACCOUNT RATE LIMIT (one registration per Google account) ─────
-  const googleSub = tokenPayload.sub;
-  if (!checkAccountLimit(googleSub)) {
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          "This Google account has already been used to submit a registration in the past hour. Each account can only register one team. Contact ig@nitw.ac.in if this is an error.",
-      },
-      { status: 429, headers }
-    );
-  }
-
-  // ── 11. EXTRACT FORM FIELDS ──────────────────────────────────────────────
+  // ── 9. EXTRACT FORM FIELDS ──────────────────────────────────────────────
   const teamName = get("teamName");
   const track = get("track");
-  const teamSize = "6"; // Hardcoded for backend compatibility
-  const hasFemale = "Yes"; // Hardcoded for backend compatibility
-  const theme = get("theme");
+  const teamSize = "6";
+  const hasFemale = "Yes";
   const ps1Type = get("ps1Type");
   const ps1Id = get("ps1Id");
   const ps2Type = get("ps2Type");
   const ps2Id = get("ps2Id");
+
+  // Derive Theme from selected First Problem Statement instead of client input
+  const selectedPS = SIH_PROBLEM_STATEMENTS.find((ps) => ps.ps_number === ps1Id);
+  const theme = selectedPS ? selectedPS.theme : "General";
   const inspiration = get("inspiration");
   const approach = get("approach");
   const facultyMentor = get("facultyMentor");
   const consent = get("consent");
+  const declaration = get("declaration");
   const memberCount = parseInt(get("memberCount") || "0");
 
   // Leader
@@ -390,10 +399,8 @@ export async function POST(req: Request) {
   const leaderPhone = get("leaderPhone");
   const leaderGender = get("leaderGender");
 
-  // BOM
-  const bomFileEntry = formData.get("bom");
-  const bomFile =
-    bomFileEntry instanceof File && bomFileEntry.size > 0 ? bomFileEntry : null;
+  // BOM Link
+  const bomLink = get("bomLink");
 
   // Members
   const memberData: Record<string, string>[] = [];
@@ -407,18 +414,21 @@ export async function POST(req: Request) {
     });
   }
 
-  // ── 12. SERVER-SIDE FIELD VALIDATION ────────────────────────────────────
+  // ── 10. SERVER-SIDE FIELD VALIDATION ────────────────────────────────────
   if (!teamName || teamName.length < 2 || teamName.length > 80)
-    return err("Team name must be 2–80 characters.", 400);
+    return err("Team name must be 2\u201380 characters.", 400);
   if (!["Software", "Hardware"].includes(track))
     return err("Please select a valid track.", 400);
   if (memberCount !== 5)
     return err("Exactly 5 members must be provided.", 400);
 
-  const hasAnyFemale = leaderGender === "Female" || memberData.some(m => m.gender === "Female");
+  const hasAnyFemale =
+    leaderGender === "Female" || memberData.some((m) => m.gender === "Female");
   if (!hasAnyFemale)
-    return err("At least one female member is mandatory. Your team cannot register.", 400);
-  if (!theme) return err("Please select a theme.", 400);
+    return err(
+      "At least one female member is mandatory. Your team cannot register.",
+      400
+    );
   if (!["Software", "Hardware"].includes(ps1Type))
     return err("Please select Software or Hardware for your first PS.", 400);
   if (!ps1Id) return err("First PS ID is required.", 400);
@@ -427,15 +437,22 @@ export async function POST(req: Request) {
   if (!approach || approach.length < 10)
     return err("Please describe your approach (min 10 characters).", 400);
   if (consent !== "Yes") return err("Consent is required.", 400);
+  if (declaration !== "Yes") return err("Declaration is required.", 400);
 
   // Leader
   if (!leaderName) return err("Team Leader full name is required.", 400);
   if (!leaderRoll) return err("Team Leader roll number is required.", 400);
-  if (!leaderYear) return err("Team Leader year and department is required.", 400);
+  if (!leaderYear)
+    return err("Team Leader year and department is required.", 400);
   if (!leaderEmail || !isValidEmail(leaderEmail))
     return err("Team Leader email is invalid.", 400);
+  if (!leaderEmail.endsWith("@student.nitw.ac.in"))
+    return err("Team Leader email must be in @student.nitw.ac.in format.", 400);
   if (!leaderPhone || !isValidPhone(leaderPhone))
-    return err("Team Leader phone must be a valid 10-digit Indian mobile number.", 400);
+    return err(
+      "Team Leader phone must be a valid 10-digit Indian mobile number.",
+      400
+    );
   if (!leaderGender) return err("Team Leader gender is required.", 400);
 
   // Members
@@ -444,103 +461,152 @@ export async function POST(req: Request) {
     const n = i + 1;
     if (!m.name) return err(`Member ${n}: Full name is required.`, 400);
     if (!m.roll) return err(`Member ${n}: Roll number is required.`, 400);
-    if (!m.year) return err(`Member ${n}: Year and department is required.`, 400);
+    if (!m.year)
+      return err(`Member ${n}: Year and department is required.`, 400);
     if (!m.email || !isValidEmail(m.email))
       return err(`Member ${n}: Email address is invalid.`, 400);
+    if (!m.email.endsWith("@student.nitw.ac.in"))
+      return err(`Member ${n}: Email address must be in @student.nitw.ac.in format.`, 400);
     if (!m.gender) return err(`Member ${n}: Gender is required.`, 400);
   }
 
   // BOM for hardware teams
   const isHardware = ps1Type === "Hardware" || ps2Type === "Hardware";
   if (isHardware) {
-    if (!bomFile) return err("Hardware teams must upload a BOM PDF.", 400);
-    if (bomFile.type !== "application/pdf")
-      return err("BOM must be a PDF file.", 400);
-    if (bomFile.size > 15 * 1024 * 1024)
-      return err("BOM file size must be under 15 MB.", 400);
+    if (!bomLink) return err("Hardware teams must provide a BOM Google Drive link.", 400);
+    if (!bomLink.startsWith("http://") && !bomLink.startsWith("https://")) {
+      return err("Please provide a valid URL for the Bill of Materials (BOM) Google Drive link.", 400);
+    }
   }
 
-  // ── 13. CREDENTIAL CHECK ─────────────────────────────────────────────────
-  if (!process.env.GOOGLE_SERVICE_ACCOUNT_JSON || !process.env.GOOGLE_SHEET_ID || !process.env.GOOGLE_DRIVE_FOLDER_ID) {
+  // ── 11. CREDENTIAL CHECK ─────────────────────────────────────────────────
+  if (
+    !process.env.GOOGLE_SERVICE_ACCOUNT_JSON ||
+    !process.env.GOOGLE_SHEET_ID ||
+    !process.env.GOOGLE_DRIVE_FOLDER_ID
+  ) {
     console.error("Missing Google API credentials in env");
     return NextResponse.json(
       {
         success: false,
-        error:
-          "Server configuration error. Please contact ig@nitw.ac.in",
+        error: "Server configuration error. Please contact ig@nitw.ac.in",
       },
       { status: 500, headers }
     );
   }
 
-  // ── 14. UPLOAD BOM TO GOOGLE DRIVE ───────────────────────────────────────
-  let bomDriveUrl = "";
-  if (isHardware && bomFile) {
-    try {
-      bomDriveUrl = await uploadBomToDrive(bomFile, sanitize(teamName));
-    } catch (e) {
-      console.error("BOM upload error:", e);
-      return NextResponse.json(
-        { success: false, error: "Failed to upload BOM PDF. Please try again." },
-        { status: 500, headers }
-      );
-    }
-  }
-
-  // ── 15. BUILD SHEET ROW ───────────────────────────────────────────────────
-  const timestamp = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
-
-  const rowData: Record<string, string> = {
-    Timestamp: timestamp,
-    "Submission IP": ip,
-    "Authenticated Email": tokenPayload.email, // from verified token, not user input
-    "Google Sub ID": googleSub,               // unique identifier (not exposed to users)
-    "Team Name": sanitize(teamName),
-    "Team Size": teamSize,
-    "Has Female Member": hasFemale,
-    "Leader Name": sanitize(leaderName),
-    "Leader Roll": sanitize(leaderRoll),
-    "Leader Year & Dept": sanitize(leaderYear),
-    "Leader Email": sanitize(leaderEmail),
-    "Leader Phone": sanitize(leaderPhone),
-    "Leader Gender": sanitize(leaderGender),
-  };
-
-  for (let i = 0; i < 5; i++) {
-    const m = memberData[i];
-    const lbl = `Member ${i + 1}`;
-    rowData[`${lbl} Name`] = m ? sanitize(m.name) : "";
-    rowData[`${lbl} Roll`] = m ? sanitize(m.roll) : "";
-    rowData[`${lbl} Year & Dept`] = m ? sanitize(m.year) : "";
-    rowData[`${lbl} Email`] = m ? sanitize(m.email) : "";
-    rowData[`${lbl} Gender`] = m ? sanitize(m.gender) : "";
-  }
-
-  rowData["Theme"] = sanitize(theme);
-  rowData["PS1 Type"] = ps1Type;
-  rowData["PS1 ID"] = sanitize(ps1Id);
-  rowData["PS2 Type"] = ps2Type;
-  rowData["PS2 ID"] = sanitize(ps2Id);
-  rowData["Inspiration"] = sanitize(inspiration);
-  rowData["Approach"] = sanitize(approach);
-  rowData["BOM Drive URL"] = bomDriveUrl;
-  rowData["Faculty Mentor"] = sanitize(facultyMentor);
-  rowData["Consent"] = consent;
-
-  // ── 16. SUBMIT TO GOOGLE SHEET ────────────────────────────────────────────
-  try {
-    await submitToSheet(rowData);
-  } catch (e) {
-    console.error("Sheet submission error:", e);
+  // ── 12. PER-ACCOUNT RATE LIMIT CHECK (after validation passes) ─────────
+  const googleSub = tokenPayload.sub;
+  const lockKey = `${googleSub}:${tokenPayload.email}`;
+  if (pendingRegistrations.has(lockKey)) {
     return NextResponse.json(
       {
         success: false,
         error:
-          "Failed to save your registration. Please try again in a moment. If this persists, contact ig@nitw.ac.in",
+          "A registration is already in progress for this account. Please wait.",
       },
-      { status: 500, headers }
+      { status: 409, headers }
     );
   }
+  pendingRegistrations.add(lockKey);
 
-  return NextResponse.json({ success: true }, { status: 200, headers });
+  try {
+    if (isAccountRateLimited(googleSub)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "This Google account has already been used to submit a registration. Each account can only register one team. Contact ig@nitw.ac.in if this is an error.",
+        },
+        { status: 429, headers }
+      );
+    }
+
+    // ── 13. DUPLICATE EMAIL CHECK (query Google Sheet) ─────────────────────
+    const isDuplicate = await checkDuplicateEmail(tokenPayload.email);
+    if (isDuplicate) {
+      // Commit rate limit since they are already registered
+      commitAccountRateLimit(googleSub);
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "This email has already been used to register a team. Each Google account can only register one team. Contact ig@nitw.ac.in if this is an error.",
+        },
+        { status: 409, headers }
+      );
+    }
+
+    // ── 14. BOM LINK FOR HARDWARE ───────────────────────────────────────────
+    let bomDriveUrl = "";
+    if (isHardware && bomLink) {
+      bomDriveUrl = bomLink;
+    }
+
+    // ── 15. BUILD SHEET ROW ───────────────────────────────────────────────────
+    const timestamp = new Date().toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+    });
+
+    const rowData: Record<string, string> = {
+      Timestamp: timestamp,
+      "Submission IP": ip,
+      "Authenticated Email": tokenPayload.email,
+      "Google Sub ID": googleSub,
+      "Team Name": sanitize(teamName),
+      "Team Size": teamSize,
+      "Has Female Member": hasFemale,
+      "Leader Name": sanitize(leaderName),
+      "Leader Roll": sanitize(leaderRoll),
+      "Leader Year & Dept": sanitize(leaderYear),
+      "Leader Email": sanitize(leaderEmail),
+      "Leader Phone": sanitize(leaderPhone),
+      "Leader Gender": sanitize(leaderGender),
+    };
+
+    for (let i = 0; i < 5; i++) {
+      const m = memberData[i];
+      const lbl = `Member ${i + 1}`;
+      rowData[`${lbl} Name`] = m ? sanitize(m.name) : "";
+      rowData[`${lbl} Roll`] = m ? sanitize(m.roll) : "";
+      rowData[`${lbl} Year & Dept`] = m ? sanitize(m.year) : "";
+      rowData[`${lbl} Email`] = m ? sanitize(m.email) : "";
+      rowData[`${lbl} Gender`] = m ? sanitize(m.gender) : "";
+    }
+
+    rowData["Theme"] = sanitize(theme);
+    rowData["PS1 Type"] = ps1Type;
+    rowData["PS1 ID"] = sanitize(ps1Id);
+    rowData["PS2 Type"] = ps2Type;
+    rowData["PS2 ID"] = sanitize(ps2Id);
+    rowData["Inspiration"] = sanitize(inspiration);
+    rowData["Approach"] = sanitize(approach);
+    rowData["BOM Drive URL"] = bomDriveUrl;
+    rowData["Faculty Mentor"] = sanitize(facultyMentor);
+    rowData["Consent"] = consent;
+
+    // ── 16. SUBMIT TO GOOGLE SHEET ────────────────────────────────────────────
+    // Rate limit is ONLY committed AFTER successful sheet write.
+    // This prevents the "locked out but no data" bug.
+    try {
+      await submitToSheet(rowData);
+    } catch (e) {
+      console.error("Sheet submission error:", e);
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Failed to save your registration. Please try again in a moment. If this persists, contact ig@nitw.ac.in",
+        },
+        { status: 500, headers }
+      );
+    }
+
+    // ── 17. COMMIT RATE LIMIT (only after successful write) ──────────────────
+    commitAccountRateLimit(googleSub);
+
+    return NextResponse.json({ success: true }, { status: 200, headers });
+  } finally {
+    pendingRegistrations.delete(lockKey);
+  }
 }
