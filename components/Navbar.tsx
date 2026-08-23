@@ -16,11 +16,8 @@ export default function Navbar() {
     { name: "Home", path: "/" },
     { name: "Events", path: "/events" },
     { name: "SIH", path: "/sih" },
-    { name: "Ideas", path: "/ideas" },
     { name: "Gallery", path: "/gallery" },
     { name: "Teams", path: "/teams" },
-    // Certificates is now an external link that opens in a new tab
-    { name: "Certificates", href: "https://certificates.ignitw.in/", external: true },
   ];
 
   return (

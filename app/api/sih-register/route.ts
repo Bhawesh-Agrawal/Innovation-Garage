@@ -227,6 +227,42 @@ async function checkDuplicateEmail(email: string): Promise<boolean> {
   }
 }
 
+async function checkDuplicateTeamName(teamName: string): Promise<boolean> {
+  const auth = getGoogleAuth();
+  const sheets = google.sheets({ version: "v4", auth });
+  const sheetId = process.env.GOOGLE_SHEET_ID;
+  if (!sheetId) return false;
+
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range: "A:Z", // Read all columns
+    });
+
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) return false;
+
+    // Find the column index for "Team Name" from the header row
+    const headers = rows[0];
+    const teamColIdx = headers.indexOf("Team Name");
+    if (teamColIdx === -1) return false;
+
+    // Check all data rows for a matching team name (case-insensitive and trimmed)
+    const normalizedName = teamName.trim().toLowerCase();
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (row[teamColIdx] && row[teamColIdx].trim().toLowerCase() === normalizedName) {
+        return true;
+      }
+    }
+
+    return false;
+  } catch (e) {
+    console.error("Error checking duplicate team name:", e);
+    return false;
+  }
+}
+
 async function submitToSheet(rowData: Record<string, string>): Promise<void> {
   const auth = getGoogleAuth();
   const sheets = google.sheets({ version: "v4", auth });
@@ -256,6 +292,102 @@ async function submitToSheet(rowData: Record<string, string>): Promise<void> {
     insertDataOption: "INSERT_ROWS",
     requestBody: resource,
   });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET — SECURELY RETRIEVE USER REGISTRATION DETAILS
+// ─────────────────────────────────────────────────────────────────────────────
+export async function GET(req: Request) {
+  try {
+    const cookies = parseCookies(req.headers.get("cookie"));
+    const idToken = cookies["sih_auth_token"];
+
+    if (!idToken) {
+      return NextResponse.json({ success: true, authenticated: false, registered: false });
+    }
+
+    let tokenPayload = null;
+    if (process.env.NODE_ENV === "development" && idToken === "dev_bypass_token") {
+      tokenPayload = {
+        sub: "dev_user_sub",
+        email: "dev@nitw.ac.in",
+        email_verified: true,
+        hd: "nitw.ac.in",
+        name: "Dev User",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        aud: "dev",
+        iss: "accounts.google.com",
+      } as any;
+    } else {
+      tokenPayload = await verifyGoogleToken(idToken);
+    }
+
+    if (!tokenPayload) {
+      return NextResponse.json({ success: true, authenticated: false, registered: false });
+    }
+
+    const email = tokenPayload.email;
+
+    const auth = getGoogleAuth();
+    const sheets = google.sheets({ version: "v4", auth });
+    const sheetId = process.env.GOOGLE_SHEET_ID;
+
+    if (!sheetId) {
+      return NextResponse.json(
+        { success: false, error: "Server configuration error: GOOGLE_SHEET_ID missing" },
+        { status: 500 }
+      );
+    }
+
+    // Fetch up to BZ columns to cover all potential member & project fields
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range: "A:BZ",
+    });
+
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) {
+      return NextResponse.json({ success: true, authenticated: true, registered: false });
+    }
+
+    const headers = rows[0];
+    const emailColIdx = headers.indexOf("Authenticated Email");
+    if (emailColIdx === -1) {
+      return NextResponse.json({ success: true, authenticated: true, registered: false });
+    }
+
+    // Find the row
+    let userRow: any[] | null = null;
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][emailColIdx] === email) {
+        userRow = rows[i];
+        break; // found the registration
+      }
+    }
+
+    if (!userRow) {
+      return NextResponse.json({ success: true, authenticated: true, registered: false });
+    }
+
+    // Map row to a nice JSON object
+    const data: Record<string, string> = {};
+    headers.forEach((header: string, idx: number) => {
+      data[header] = userRow ? userRow[idx] || "" : "";
+    });
+
+    return NextResponse.json({
+      success: true,
+      authenticated: true,
+      registered: true,
+      data,
+    });
+  } catch (error) {
+    console.error("GET Registration Error:", error);
+    return NextResponse.json(
+      { success: false, error: "Server Error" },
+      { status: 500 }
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -410,6 +542,7 @@ export async function POST(req: Request) {
       roll: get(`member${i}Roll`),
       year: get(`member${i}Year`),
       email: get(`member${i}Email`),
+      phone: get(`member${i}Phone`),
       gender: get(`member${i}Gender`),
     });
   }
@@ -467,6 +600,8 @@ export async function POST(req: Request) {
       return err(`Member ${n}: Email address is invalid.`, 400);
     if (!m.email.endsWith("@student.nitw.ac.in"))
       return err(`Member ${n}: Email address must be in @student.nitw.ac.in format.`, 400);
+    if (!m.phone || !isValidPhone(m.phone))
+      return err(`Member ${n}: Phone must be a valid 10-digit Indian mobile number.`, 400);
     if (!m.gender) return err(`Member ${n}: Gender is required.`, 400);
   }
 
@@ -537,6 +672,18 @@ export async function POST(req: Request) {
       );
     }
 
+    // ── 13b. DUPLICATE TEAM NAME CHECK (query Google Sheet) ─────────────────
+    const isDuplicateTeam = await checkDuplicateTeamName(teamName);
+    if (isDuplicateTeam) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `The team name "${teamName}" is already taken. Please choose a unique team name.`,
+        },
+        { status: 409, headers }
+      );
+    }
+
     // ── 14. BOM LINK FOR HARDWARE ───────────────────────────────────────────
     let bomDriveUrl = "";
     if (isHardware && bomLink) {
@@ -571,6 +718,7 @@ export async function POST(req: Request) {
       rowData[`${lbl} Roll`] = m ? sanitize(m.roll) : "";
       rowData[`${lbl} Year & Dept`] = m ? sanitize(m.year) : "";
       rowData[`${lbl} Email`] = m ? sanitize(m.email) : "";
+      rowData[`${lbl} Phone`] = m ? sanitize(m.phone) : "";
       rowData[`${lbl} Gender`] = m ? sanitize(m.gender) : "";
     }
 

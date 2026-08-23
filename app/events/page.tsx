@@ -1638,7 +1638,7 @@ const upcomingEvents: EventItem[] = [
         id: 1,
         category: "Hackathons",
         title: "SIH Ignite",
-        date: "SEPT 26 / 36H",
+        date: "SEPT 11 / 36H",
         description: "36 hours to build the impossible. Prizes up to 1.5 lakhs",
         image: "/events/SIH26.png",
         link: "/sih/register",

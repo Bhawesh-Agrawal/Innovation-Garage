@@ -811,7 +811,7 @@ export default function Home() {
                 
                 <div className="inline-flex items-center gap-3 px-4 py-1 bg-surface-card/80 backdrop-blur-sm border border-highlight/30 transform hover:-translate-y-1 transition-transform mb-4 pixel-corners pointer-events-auto">
                     <span className="w-2 h-2 bg-primary animate-pulse shadow-[0_0_8px_#FF6A00]"></span>
-                    <span className="text-highlight text-lg font-pixel uppercase tracking-widest">Est. 2026 // NIT Warangal</span>
+                    <span className="text-highlight text-lg font-pixel uppercase tracking-widest">Est. 2013 // NIT Warangal</span>
                 </div>
 
                 <h1 className="text-5xl md:text-7xl lg:text-8xl font-pixel uppercase text-text-main leading-[0.9] tracking-normal max-w-6xl drop-shadow-[0_4px_0_rgba(215,38,255,0.4)] pointer-events-auto">

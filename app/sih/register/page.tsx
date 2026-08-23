@@ -41,6 +41,7 @@ type MemberData = {
   rollNumber: string;
   yearAndDept: string;
   email: string;
+  phone: string;
   gender: string;
 };
 
@@ -55,6 +56,7 @@ const emptyMember = (): MemberData => ({
   rollNumber: "",
   yearAndDept: "",
   email: "",
+  phone: "",
   gender: "",
 });
 
@@ -282,6 +284,9 @@ function MemberSection({
         <FormInput id={`${label}-email`} label="Email Address" required={isRequired}
           type="email" placeholder="e.g. 22cs1001@student.nitw.ac.in"
           value={data.email} onChange={(v) => onChange("email", v)} maxLength={80} />
+        <FormInput id={`${label}-phone`} label="Phone Number" required={isRequired}
+          type="tel" placeholder="e.g. 9876543210"
+          value={data.phone} onChange={(v) => onChange("phone", v)} maxLength={10} />
       </div>
       {/* Gender */}
       <div className="flex flex-col gap-2">
@@ -488,7 +493,7 @@ function GoogleSignInStep({ onSignIn }: { onSignIn: (user: GoogleUser) => void }
       )}
 
       {/* Security note */}
-      <div className="bg-surface-card border border-white/10 p-4 max-w-md flex flex-col gap-2">
+      {/* <div className="bg-surface-card border border-white/10 p-4 max-w-md flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined text-primary text-xl">lock</span>
           <span className="font-pixel text-white/60 text-lg uppercase tracking-wider">Why sign in?</span>
@@ -506,7 +511,7 @@ function GoogleSignInStep({ onSignIn }: { onSignIn: (user: GoogleUser) => void }
             </li>
           ))}
         </ul>
-      </div>
+      </div> */}
     </div>
   );
 }
@@ -682,10 +687,15 @@ export default function SIHRegisterPage() {
       return;
     }
 
-    // Validate members' emails format
+    // Validate members' emails and phone format
     for (let i = 0; i < members.length; i++) {
       if (!members[i].email.endsWith("@student.nitw.ac.in")) {
         showError(`Team Member ${i + 1} email must end with @student.nitw.ac.in`);
+        return;
+      }
+      const phoneRegex = /^[6-9]\d{9}$/;
+      if (!members[i].phone || !phoneRegex.test(members[i].phone)) {
+        showError(`Team Member ${i + 1} phone number must be a valid 10-digit Indian mobile number`);
         return;
       }
     }
@@ -730,6 +740,7 @@ export default function SIHRegisterPage() {
         formData.append(`member${i + 1}Roll`, m.rollNumber);
         formData.append(`member${i + 1}Year`, m.yearAndDept);
         formData.append(`member${i + 1}Email`, m.email);
+        formData.append(`member${i + 1}Phone`, m.phone);
         formData.append(`member${i + 1}Gender`, m.gender);
       }
 
@@ -814,7 +825,7 @@ export default function SIHRegisterPage() {
                   <span className="material-symbols-outlined text-secondary mt-0.5">group</span>
                   <div className="flex flex-col gap-1">
                     <p className="text-lg text-white/70 leading-relaxed">
-                      Join the WhatsApp group for any updates (Only team leaders):
+                      Join the WhatsApp group for any updates:
                     </p>
                     <a 
                       href="https://chat.whatsapp.com/IZ2kBqx76QO8DyIdo1HF3U?s=cl&p=a&ilr=4" 
@@ -838,7 +849,7 @@ export default function SIHRegisterPage() {
                 <div className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-secondary mt-0.5">menu_book</span>
                   <p className="text-lg text-white/70 leading-relaxed">
-                    Read the Handbook provided (a PDF will be provided later in the website) - <span className="text-primary uppercase tracking-widest text-base">Coming Soon</span>.
+                    Read the Handbook provided - <span className="text-primary uppercase tracking-widest text-base">Coming Soon</span>.
                   </p>
                 </div>
               </div>
@@ -877,13 +888,13 @@ export default function SIHRegisterPage() {
               <span className="text-xl font-pixel tracking-widest uppercase text-white">Team Registration</span>
             </div>
             <h1 className="text-3xl md:text-5xl font-pixel text-text-main uppercase leading-tight">
-              IGnite<span className="text-primary">36</span>{" "}
-              <span className="text-secondary">SIH 2026</span>
+              SIH{" "}
+              <span className="text-secondary">IGnite<span className="text-primary">2026</span></span>
             </h1>
             <p className="text-white/40 font-pixel text-lg max-w-xl leading-relaxed">
               Please complete this form carefully. Fields marked{" "}
               <span className="text-primary">*</span> are required.
-              For Problem Statement, visit{" "}
+              For Problem Statements, visit{" "}
               <a href="https://sih.gov.in/" target="_blank" rel="noopener noreferrer" className="text-secondary hover:underline">sih.gov.in</a>
             </p>
             <Link href="/sih" className="inline-flex items-center gap-2 text-white/40 hover:text-primary font-pixel text-lg transition-colors">
