@@ -523,6 +523,9 @@ export default function SIHRegisterPage() {
   // Auth state
   const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [checkingRegistration, setCheckingRegistration] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [registrationData, setRegistrationData] = useState<Record<string, string> | null>(null);
 
   // Restore session from HttpOnly cookie on page refresh
   useEffect(() => {
@@ -541,6 +544,35 @@ export default function SIHRegisterPage() {
     }
     restoreSession();
   }, []);
+
+  // Check if the authenticated user has already registered
+  useEffect(() => {
+    if (!googleUser) {
+      setIsRegistered(false);
+      setRegistrationData(null);
+      return;
+    }
+
+    async function checkUserRegistration() {
+      setCheckingRegistration(true);
+      try {
+        const res = await fetch("/api/sih-register");
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success && result.registered) {
+            setIsRegistered(true);
+            setRegistrationData(result.data || null);
+          }
+        }
+      } catch (err) {
+        console.error("Error checking registration status:", err);
+      } finally {
+        setCheckingRegistration(false);
+      }
+    }
+
+    checkUserRegistration();
+  }, [googleUser]);
 
   // Section 2 — Team Details
   const [teamName, setTeamName] = useState("");
@@ -915,6 +947,46 @@ export default function SIHRegisterPage() {
                 <GoogleSignInStep onSignIn={setGoogleUser} />
               </div>
             )
+          ) : checkingRegistration ? (
+            <div className="bg-surface-card border-2 border-secondary/30 p-6 md:p-10 flex flex-col items-center gap-4 py-16">
+              <span className="material-symbols-outlined animate-spin text-4xl text-primary">progress_activity</span>
+              <p className="font-pixel text-xl text-white/50">Verifying registration status...</p>
+            </div>
+          ) : isRegistered ? (
+            <div className="bg-surface-card border-2 border-green-500/30 p-6 md:p-10 flex flex-col items-center text-center gap-6">
+              <span className="material-symbols-outlined text-7xl text-green-400">verified_user</span>
+              <h2 className="font-pixel text-2xl md:text-3xl text-green-400 uppercase tracking-widest">Already Registered</h2>
+              <div className="font-pixel text-lg md:text-xl text-white/70 max-w-2xl flex flex-col items-center gap-4">
+                <p>
+                  Your email <span className="text-primary font-bold">{googleUser.email}</span> is already associated with a registered team:
+                </p>
+                {registrationData && (
+                  <div className="border-2 border-white/10 bg-background-main/50 p-6 flex flex-col gap-3 rounded max-w-md w-full text-left">
+                    <div className="flex justify-between border-b border-white/10 pb-2 gap-4">
+                      <span className="text-white/40 uppercase tracking-wider text-sm">Team Name</span>
+                      <span className="text-secondary font-bold text-right">{registrationData["Team Name"]}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-white/10 pb-2 gap-4">
+                      <span className="text-white/40 uppercase tracking-wider text-sm">Leader Name</span>
+                      <span className="text-text-main font-bold text-right">{registrationData["Leader Name"]}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-white/40 uppercase tracking-wider text-sm">Leader Roll</span>
+                      <span className="text-text-main font-bold text-right">{registrationData["Leader Roll"]}</span>
+                    </div>
+                  </div>
+                )}
+                <p className="text-base text-white/40 mt-2">
+                  Duplicate registrations are not permitted under SIH guidelines.
+                </p>
+              </div>
+              <Link
+                href="/sih"
+                className="inline-flex items-center gap-3 bg-primary text-white font-pixel text-xl uppercase tracking-widest px-8 py-4 hover:bg-primary/90 transition-all duration-200 shadow-[4px_4px_0px_0px_rgba(215,38,255,0.6)]"
+              >
+                Go to SIH Dashboard
+              </Link>
+            </div>
           ) : (
             <>
               {/* Signed-in badge */}
