@@ -343,7 +343,7 @@ export default function SIHPage() {
   return (
     <>
       <Navbar />
-      <main className="flex-grow relative w-full bg-background-main text-text-main font-pixel min-h-screen">
+      <main className="flex-grow relative w-full bg-background-main text-text-main font-pixel min-h-screen overflow-x-hidden">
         {/* Background grid */}
         <div className="absolute inset-0 bg-[image:var(--bg-grid-radial)] bg-[size:32px_32px] pointer-events-none opacity-20 fixed" />
         <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[120px] pointer-events-none fixed" />

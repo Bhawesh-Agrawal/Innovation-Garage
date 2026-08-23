@@ -1825,7 +1825,7 @@ export default function Events() {
         </div>
       )}
 
-      <main className="flex-1 flex flex-col items-center w-full px-4 md:px-10 py-12 max-w-[1440px] mx-auto bg-cyber-black text-highlight font-pixel min-h-screen">
+      <main className="flex-1 flex flex-col items-center w-full px-4 md:px-10 py-12 max-w-[1440px] mx-auto bg-cyber-black text-highlight font-pixel min-h-screen overflow-x-hidden">
         
         {/* HEADER SECTION */}
         <div className="relative w-full py-12 mb-12 border-b-4 border-surface-card pb-8 overflow-hidden group">

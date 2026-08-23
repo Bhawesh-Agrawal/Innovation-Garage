@@ -282,7 +282,7 @@ export default function Teams() {
   return (
     <>
       <Navbar />
-      <main className="flex-grow relative w-full bg-background-main text-text-main font-pixel min-h-screen">
+      <main className="flex-grow relative w-full bg-background-main text-text-main font-pixel min-h-screen overflow-x-hidden">
         
         {/* Background Effects */}
         <div className="absolute inset-0 bg-[image:var(--bg-grid-radial)] bg-[size:32px_32px] pointer-events-none opacity-20 fixed"></div>
