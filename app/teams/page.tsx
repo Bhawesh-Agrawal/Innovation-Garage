@@ -24,56 +24,56 @@ const teamData = {
   "SF & Outreach": [
     {
       "name": "Lavanya Trivedi",
-      "role": "Addl. Sec",
+      "role": "Team Lead",
       "dept": "Chemical Dept. - 4th Year",
       "img": "/updated_teams/Lavanya.png",
       "link": "https://www.linkedin.com/in/lavanyatrivedi"
     },
     {
       "name": "Vaishnavi",
-      "role": "Addl. Sec",
+      "role": "Team Lead",
       "dept": "4th Year",
       "img": "/Innovation Garage Team/SF and Outreach/Vaishnavi_Kuppa.jpg",
       "link": "https://www.linkedin.com/in/vaishnavi-kuppa-436650301?utm_source=share_via&utm_content=profile&utm_medium=member_android"
     },
     {
       "name": "Akshay Kumar Korepu",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "MNC Dept. - 3rd Year",
       "img": "/Innovation Garage Team/SF and Outreach/Akshay_kumar.jpeg",
       "link": "www.linkedin.com/in/akshaykumarkorepu"
     },
     {
       "name": "Shambhavi Dhange",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "Mathematics and Computing Dept. - 3rd Year",
       "img": "/updated_teams/Shambhavi.png",
       "link": "https://www.linkedin.com/in/shambhavi-dhange-768049343"
     },
     {
       "name": "Roy Harwani",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "MNC Dept. - 3rd Year",
       "img": "/Innovation Garage Team/SF and Outreach/Roy_Harwani.jpg",
       "link": "https://www.linkedin.com/in/roy-harwani-5030a6312/"
     },
     {
       "name": "Parth Gupta",
-      "role": "Executive",
+      "role": "Associate Member",
       "dept": "Mechanical Dept. - 2nd Year",
       "img": "/Innovation Garage Team/SF and Outreach/Parth_Gupta.JPG",
       "link": "https://www.linkedin.com/in/parth-gupta-3a2877370?utm_source=share_via&utm_content=profile&utm_medium=member_ios"
     },
     {
       "name": "Rahil Jain",
-      "role": "Executive",
+      "role": "Associate Member",
       "dept": "EEE Dept. - 2nd Year",
       "img": "/Innovation Garage Team/SF and Outreach/Rahil_Jain.jpg",
       "link": "https://www.linkedin.com/in/rahil-jain-a57a2a375"
     },
     {
       "name": "Anurag sharma",
-      "role": "Executive",
+      "role": "Associate Member",
       "dept": "Chemical Dept. - 2nd Year",
       "img": "/Innovation Garage Team/SF and Outreach/Anurag_Sharma.jpg",
       "link": "https://www.linkedin.com/in/anurag-sharma-3642ab382?utm_source=share_via&utm_content=profile&utm_medium=member_android"
@@ -82,63 +82,63 @@ const teamData = {
   "Tech & AI": [
     {
       "name": "Vedant Amit Agrawal",
-      "role": "Addl. Sec",
+      "role": "Team Lead",
       "dept": "CSE Dept. - 4th Year",
       "img": "/updated_teams/Vedant.png",
       "link": "https://www.linkedin.com/in/vedant-agrawal-0ba2a7325/"
     },
     {
       "name": "Koushik Sai Goutham",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "Mechanical Dept. - 3rd Year",
       "img": "/Innovation Garage Team/Tech and AI/Koushik_Sai7.jpg",
       "link": "https://www.linkedin.com/in/koushik-sai-goutham-a6b622333"
     },
     {
       "name": "Ashutosh Bhat",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "ECE Dept. - 3rd Year",
       "img": "/Innovation Garage Team/Tech and AI/Ashutosh_Bhat.png",
       "link": "https://www.linkedin.com/in/1shu1iwari"
     },
     {
       "name": "Mrinaal Gupta",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "CSE (AI AND DS) Dept. - 3rd Year",
       "img": "/Innovation Garage Team/Tech and AI/Mrinaal.png",
       "link": "https://www.linkedin.com/in/mrinaal-gupta-52240a279"
     },
     {
       "name": "Trupti Aggarwal",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "Mathematics & Computing Dept. - 3rd Year",
       "img": "/updated_teams/Trupti.png",
       "link": ""
     },
     {
       "name": "Anshu Mukhopadhyay",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "MME Dept. - 3rd Year",
       "img": "/Innovation Garage Team/Tech and AI/Anshu_Mukhopadhyay.jpg.jpg",
       "link": "https://www.linkedin.com/in/anshu-mukhopadhyay-590455322/"
     },
     {
       "name": "Bhawesh Agrawal",
-      "role": "Executive",
+      "role": "Associate Member",
       "dept": "ECE Dept. - 2nd Year",
       "img": "/Innovation Garage Team/Tech and AI/Bhawesh_Agrawal.jpg",
       "link": "https://www.linkedin.com/in/bhawesh-agrawal/"
     },
     {
       "name": "Akarsh Jaiswal",
-      "role": "Executive",
+      "role": "Associate Member",
       "dept": "CSE Dept. - 2nd Year",
       "img": "/Innovation Garage Team/Tech and AI/Akarsh_Jaiswal.png",
       "link": "https://www.linkedin.com/in/akarsh-jaiswal-aa9413418/?skipRedirect=true"
     },
     {
       "name": "Ayush Dutta",
-      "role": "Executive",
+      "role": "Associate Member",
       "dept": "Chemical Dept. - 2nd Year",
       "img": "/Innovation Garage Team/Tech and AI/Ayush_Dutta.jpg",
       "link": "https://www.linkedin.com/in/ayush-dutta-nitw"
@@ -147,70 +147,70 @@ const teamData = {
   "Operations": [
     {
       "name": "Naitik Lunkad",
-      "role": "Addl. Sec",
+      "role": "Team Lead",
       "dept": "chemical Dept. - 4th Year",
       "img": "/Innovation Garage Team/Operation/Naitik_Lunkad.jpg",
       "link": "https://www.linkedin.com/in/naitik-lunkad-664937349?utm_source=share_via&utm_content=profile&utm_medium=member_android"
     },
     {
       "name": "Vikalp Saxena",
-      "role": "Addl. Sec",
+      "role": "Team Lead",
       "dept": "Biotech Dept. - 4th Year",
       "img": "/updated_teams/Vikalp.png",
       "link": "https://www.linkedin.com/in/vikalp-saxena-751a27206/"
     },
     {
       "name": "Shubhankar Rawat",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "BIOTECH Dept. - 3rd Year",
       "img": "/Innovation Garage Team/Operation/Shubhankar_Rawat.png",
       "link": "www.linkedin.com/in/shubhankar-rawat-aa754622a/"
     },
     {
       "name": "Vatsal Saini",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "MECHANICAL Dept. - 3rd Year",
       "img": "/Innovation Garage Team/Operation/Vatsal_Saini.jpg",
       "link": "https://www.linkedin.com/in/vatsal-saini-b7bb23323?utm_source=share_via&utm_content=profile&utm_medium=member_android"
     },
     {
       "name": "Dhrithi Eshwar Konkati",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "Mechanical Dept. - 3rd Year",
       "img": "/Innovation Garage Team/Operation/Dhrithi_Eshwar_Konkati.jpg",
       "link": "https://www.linkedin.com/in/dhrithi-eshwar-konkati-7b7548362/"
     },
     {
       "name": "Sami Hoda",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "BIOTECH Dept. - 3rd Year",
       "img": "/Innovation Garage Team/Operation/sami_hoda.jpg",
       "link": "www.linkedin.com/in/mohammad-sami-hoda-b010291b4"
     },
     {
       "name": "Parthi Jain",
-      "role": "Executive",
+      "role": "Associate Member",
       "dept": "CSE Dept. - 2nd Year",
       "img": "/Innovation Garage Team/Operation/Parthi_Jain.jpg",
       "link": ""
     },
     {
       "name": "Aryan Bheema",
-      "role": "Executive",
+      "role": "Associate Member",
       "dept": "MME Dept. - 2nd Year",
       "img": "/Innovation Garage Team/Operation/Aryan_Jain.jpg",
       "link": "https://www.linkedin.com/in/aryan-bheema-079397349/"
     },
     {
       "name": "Segu Bhavyasai Sanjana",
-      "role": "Executive",
+      "role": "Associate Member",
       "dept": "ECE VLSI Dept. - 2nd Year",
       "img": "/Innovation Garage Team/Operation/Segu_Bhavyasai_Sanjana.jpg",
-      "link": "www.linkedin.com/in/segu-bhavyasai-sanjana"
+      "link": "https://www.linkedin.com/in/segu-bhavyasai-sanjana"
     },
     {
       "name": "Aryan Bheema",
-      "role": "Executive",
+      "role": "Associate Member",
       "dept": "MME Dept. - 2nd Year",
       "img": "/Innovation Garage Team/Operation/Aryan_Bheema.png",
       "link": "https://www.linkedin.com/in/aryan-bheema-079397349/"
@@ -219,56 +219,56 @@ const teamData = {
   "Creative": [
     {
       "name": "Mokshith Srinivas Surutkar",
-      "role": "Addl. Sec",
+      "role": "Team Lead",
       "dept": "Mechanical Dept. - 4th Year",
       "img": "/Innovation Garage Team/Creative/Mokshith_Srinivas_Surutkar.jpg",
       "link": "https://www.linkedin.com/in/mokshith-srinivas-surutkar-436322280/"
     },
     {
-      "name": "rayee venkata sri harsha vardhan",
-      "role": "Addl. Sec",
+      "name": "Rayee Venkata Sri Harsha Vardhan",
+      "role": "Team Lead",
       "dept": "Ece Dept. - 4th Year",
       "img": "/Innovation Garage Team/Tech and AI/Harsha.png",
       "link": ""
     },
     {
       "name": "Hardik Nishad",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "CHEMICAL Dept. - 3rd Year",
       "img": "/Innovation Garage Team/Creative/Hardik_Nishad.jpeg",
       "link": "https://www.linkedin.com/in/hardik-nishad-1b36aa311/"
     },
     {
       "name": "Sriragacharan",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "Biotech Dept. - 3rd Year",
       "img": "/Innovation Garage Team/Creative/Ragacharan.jpeg",
       "link": "https://www.linkedin.com/in/sriragacharan-vemuri-9b752b326"
     },
     {
       "name": "Anuj Kishor",
-      "role": "Executive",
+      "role": "Executive Member",
       "dept": "Chemical Dept. - 3rd Year",
       "img": "/Innovation Garage Team/Creative/Anuj.jpeg",
       "link": "https://www.linkedin.com/in/anuj-kishor-4b7502425?utm_source=share_via&utm_content=profile&utm_medium=member_android"
     },
     {
-      "name": "Ashutosh Bhat",
-      "role": "Executive",
+      "name": "Ashutosh Tiwari",
+      "role": "Associate Member",
       "dept": "ECE Dept. - 2nd Year",
       "img": "/Innovation Garage Team/Creative/Ashutosh Tiwari_.jpg",
       "link": "https://www.linkedin.com/in/1shu1iwari"
     },
     {
       "name": "D Adithyan",
-      "role": "Executive",
+      "role": "Associate Member",
       "dept": "MECHANICAL Dept. - 2nd Year",
       "img": "/Innovation Garage Team/Creative/D_Adithyan.jpeg",
       "link": "https://www.linkedin.com/in/d-adithyan"
     },
     {
       "name": "Kushagra Anand",
-      "role": "Executive",
+      "role": "Associate Member",
       "dept": "MME Dept. - 2nd Year",
       "img": "/updated_teams/Kushagra.png",
       "link": "https://www.linkedin.com/in/kushagra-anand-b0b840369"
