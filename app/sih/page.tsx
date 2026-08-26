@@ -723,7 +723,7 @@ export default function SIHPage() {
                     "6 members per team, with the designated Team Leader acting as the primary point of contact.",
                     "At least one female member is mandatory for every participating team.",
                     "All members must be regular, full-time NITW students; inter-institute teams are strictly prohibited.",
-                    "Mandatory presence of all team members is required at every checkpoint; unexcused absences will result in point deductions or disqualification.",
+                    "Mandatory on-site presence of at least 4 team members is required for the hackathon. While 4 is the minimum, strict priority and preference will be awarded to teams with full attendance (up to 6 members). Failure to meet the 4-member minimum without an excuse will result in disqualification",
                   ],
                 },
                 {
