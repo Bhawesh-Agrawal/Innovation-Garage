@@ -41,7 +41,7 @@ const teamData = {
       "role": "Executive Member",
       "dept": "MNC Dept. - 3rd Year",
       "img": "/Innovation Garage Team/SF and Outreach/Akshay_kumar.jpeg",
-      "link": "www.linkedin.com/in/akshaykumarkorepu"
+      "link": "https://www.linkedin.com/in/akshaykumarkorepu"
     },
     {
       "name": "Shambhavi Dhange",
@@ -99,7 +99,7 @@ const teamData = {
       "role": "Executive Member",
       "dept": "ECE Dept. - 3rd Year",
       "img": "/Innovation Garage Team/Tech and AI/Ashutosh_Bhat.png",
-      "link": "https://www.linkedin.com/in/1shu1iwari"
+      "link": "https://www.linkedin.com/in/ashb06/"
     },
     {
       "name": "Mrinaal Gupta",
@@ -113,7 +113,7 @@ const teamData = {
       "role": "Executive Member",
       "dept": "Mathematics & Computing Dept. - 3rd Year",
       "img": "/updated_teams/Trupti.png",
-      "link": ""
+      "link": "https://www.linkedin.com/in/trupti-aggarwal-a91670350/"
     },
     {
       "name": "Anshu Mukhopadhyay",
@@ -164,7 +164,7 @@ const teamData = {
       "role": "Executive Member",
       "dept": "BIOTECH Dept. - 3rd Year",
       "img": "/Innovation Garage Team/Operation/Shubhankar_Rawat.png",
-      "link": "www.linkedin.com/in/shubhankar-rawat-aa754622a/"
+      "link": "https://www.linkedin.com/in/shubhankar-rawat-aa754622a/"
     },
     {
       "name": "Vatsal Saini",
@@ -185,7 +185,7 @@ const teamData = {
       "role": "Executive Member",
       "dept": "BIOTECH Dept. - 3rd Year",
       "img": "/Innovation Garage Team/Operation/sami_hoda.jpg",
-      "link": "www.linkedin.com/in/mohammad-sami-hoda-b010291b4"
+      "link": "https://www.linkedin.com/in/mohammad-sami-hoda-b010291b4"
     },
     {
       "name": "Parthi Jain",
@@ -195,11 +195,17 @@ const teamData = {
       "link": ""
     },
     {
+<<<<<<< HEAD
+      "name": "Aryan Jain",
+      "role": "Associate Member",
+      "dept": "Chemical Dept. - 2nd Year",
+=======
       "name": "Aryan Bheema",
       "role": "Associate Member",
       "dept": "MME Dept. - 2nd Year",
+>>>>>>> c7891f384d53730a61669411bd062442d9ccd69c
       "img": "/Innovation Garage Team/Operation/Aryan_Jain.jpg",
-      "link": "https://www.linkedin.com/in/aryan-bheema-079397349/"
+      "link": "https://www.linkedin.com/in/aryan-jain-67484b309"
     },
     {
       "name": "Segu Bhavyasai Sanjana",
@@ -318,7 +324,8 @@ export default function Teams() {
                         src={leader.img} 
                         alt={leader.name} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                        style={{ imageRendering: "pixelated" }}
+                        loading="lazy"
+                        decoding="async"
                       />
                     </div>
                     <div className="text-center sm:text-left flex-1">
@@ -379,7 +386,8 @@ export default function Teams() {
                         src={member.img} 
                         alt={member.name}
                         className="w-full h-full object-cover" 
-                        style={{ imageRendering: "pixelated" }}
+                        loading="lazy"
+                        decoding="async"
                       />
                     </div>
                     <h4 className="text-2xl font-bold text-text-main font-arial uppercase tracking-wide">{member.name}</h4>
