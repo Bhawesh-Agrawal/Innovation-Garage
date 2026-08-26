@@ -718,16 +718,8 @@
 // //                     </a>
 
 // //                 </div>
-// //             </div>
-// //         </section>
-
-// //       </main>
-// //       <Footer />
-// //     </>
-// //   );
-// // }
-
 "use client"
+import { useState, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import InteractiveNodes from "@/components/InteractiveNodes"; // <--- Updated Import
@@ -778,6 +770,17 @@ const pastEvents = [
 ];
 
 export default function Home() {
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const handleWheelScroll = () => {
+    setIsScrolling(true);
+    if (scrollTimer.current) clearTimeout(scrollTimer.current);
+    scrollTimer.current = setTimeout(() => {
+      setIsScrolling(false);
+    }, 250);
+  };
+
   return (
     <>
       <Navbar />
@@ -845,53 +848,75 @@ export default function Home() {
         </div>
 
         {/* ================= ABOUT SECTION ================= */}
-        <section className="relative py-24 px-6 bg-background-main overflow-hidden">
-            <div className="max-w-[1280px] mx-auto relative z-10">
-                <div className="mb-16 flex flex-col md:flex-row justify-between items-end gap-6 border-b border-white/10 pb-8">
+        <section 
+            className="relative py-24 md:py-32 px-6 bg-background-main overflow-hidden min-h-0 lg:min-h-[800px] touch-pan-y"
+            onWheel={handleWheelScroll}
+        >
+            {/* Background 3D Spline Robot Layer - Hidden on mobile/tablet (< lg), active strictly on Desktop (lg >= 1024px) */}
+            <div className={`absolute inset-0 z-0 hidden lg:flex items-center justify-center overflow-hidden ${isScrolling ? 'pointer-events-none' : 'pointer-events-none lg:pointer-events-auto'}`}>
+                <iframe 
+                    src="https://my.spline.design/nexbotrobotcharacterconcept-tl1wm4VVCg0FQCrzU578ZLc6/" 
+                    frameBorder="0" 
+                    width="100%" 
+                    height="100%"
+                    className={`w-full h-full min-h-[700px] scale-100 object-cover border-none touch-pan-y ${isScrolling ? 'pointer-events-none' : 'pointer-events-none lg:pointer-events-auto'}`}
+                    title="Interactive 3D Robot Background"
+                ></iframe>
+            </div>
+
+            <div className="max-w-[1440px] mx-auto relative z-10 pointer-events-none select-none">
+                <div className="mb-16 flex flex-col md:flex-row justify-between items-end gap-6 pb-4 pointer-events-none">
                     <div>
                         <span className="text-primary font-pixel text-xl uppercase tracking-widest mb-2 block">01 // Who Are We</span>
                         <h2 className="text-5xl md:text-6xl font-pixel uppercase text-text-main leading-none">
                             About The <span className="text-secondary">Garage</span>
                         </h2>
                     </div>
-                    <p className="max-w-md text-text-main/60 font-display text-l text-right hidden md:block">
+                    <p className="max-w-md text-text-main/80 font-display text-l text-right hidden md:block">
                         A collaborative ecosystem where students experiment without fear of failure.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="flex flex-col lg:flex-row justify-between items-stretch gap-8 lg:gap-64">
                     {/* Mission Card */}
-                    <div className="group relative p-8 rounded-none bg-surface-card border border-white/10 hover:border-primary transition-all duration-300 pixel-corners">
+                    <div className="group relative p-8 md:p-10 lg:max-w-[440px] w-full rounded-none bg-[#0e0f12]/90 border border-white/15 hover:border-primary transition-all duration-300 pixel-corners flex flex-col justify-between shadow-[0_8px_32px_rgba(0,0,0,0.7)] pointer-events-none">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-bl-[4rem]"></div>
-                        <div className="flex items-start justify-between mb-8">
-                            <div className="size-14 bg-background-main border border-primary text-primary flex items-center justify-center pixel-corners shadow-[4px_4px_0_0_#FF6A00]">
-                                <span className="material-symbols-outlined text-3xl">target</span>
+                        <div>
+                            <div className="flex items-start justify-between mb-8">
+                                <div className="size-14 bg-background-main border border-primary text-primary flex items-center justify-center pixel-corners shadow-[4px_4px_0_0_#FF6A00]">
+                                    <span className="material-symbols-outlined text-3xl">target</span>
+                                </div>
+                                <span className="font-pixel text-6xl text-white/10 group-hover:text-primary/20 transition-colors">01</span>
                             </div>
-                            <span className="font-pixel text-6xl text-white/5 group-hover:text-primary/10 transition-colors">01</span>
+                            <h3 className="text-3xl font-pixel uppercase text-text-main mb-4 group-hover:text-primary transition-colors">Our Mission</h3>
+                            <p className="text-text-main/80 text-lg leading-relaxed font-display">
+                                To support students in turning ideas into projects and collaborations. We bring students from diverse backgrounds together to learn and build side by side.
+                            </p>
                         </div>
-                        <h3 className="text-3xl font-pixel uppercase text-text-main mb-4 group-hover:text-primary transition-colors">Our Mission</h3>
-                        <p className="text-text-main/70 text-lg leading-relaxed font-display mb-6">
-                            To support students in turning ideas into projects and collaborations. 
-We bring students from diverse backgrounds together to learn and build side by side.
-                        </p>
                     </div>
 
                     {/* History Card */}
-                    <div className="group relative p-8 rounded-none bg-surface-card border border-white/10 hover:border-secondary transition-all duration-300 pixel-corners">
+                    <div className="group relative p-8 md:p-10 lg:max-w-[440px] w-full rounded-none bg-[#0e0f12]/90 border border-white/15 hover:border-secondary transition-all duration-300 pixel-corners flex flex-col justify-between shadow-[0_8px_32px_rgba(0,0,0,0.7)] pointer-events-none">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-secondary/10 to-transparent rounded-bl-[4rem]"></div>
-                        <div className="flex items-start justify-between mb-8">
-                            <div className="size-14 bg-background-main border border-secondary text-secondary flex items-center justify-center pixel-corners shadow-[4px_4px_0_0_#D726FF]">
-                                <span className="material-symbols-outlined text-3xl">history_edu</span>
+                        <div>
+                            <div className="flex items-start justify-between mb-8">
+                                <div className="size-14 bg-background-main border border-secondary text-secondary flex items-center justify-center pixel-corners shadow-[4px_4px_0_0_#D726FF]">
+                                    <span className="material-symbols-outlined text-3xl">history_edu</span>
+                                </div>
+                                <span className="font-pixel text-6xl text-white/10 group-hover:text-secondary/20 transition-colors">02</span>
                             </div>
-                            <span className="font-pixel text-6xl text-white/5 group-hover:text-secondary/10 transition-colors">02</span>
+                            <h3 className="text-2xl lg:text-3xl font-pixel uppercase text-text-main mb-4 group-hover:text-secondary transition-colors">Our History</h3>
+                            <p className="text-text-main/80 text-lg leading-relaxed font-display">
+                                What began as a small student meetup has grown into a campus makerspace for creation and skill development. Founded in 2013, Innovation Garage has supported 50+ startups and serves as a startup incubator at NITW.
+                            </p>
                         </div>
-                        <h3 className="text-3xl font-pixel uppercase text-text-main mb-4 group-hover:text-secondary transition-colors">Our History</h3>
-                        <p className="text-text-main/70 text-lg leading-relaxed font-display mb-6">
-                            What began as a small student meetup has grown into a campus makerspace for creation and skill development. Founded in 2013, Innovation Garage has supported 50+ startups and serves as a startup incubator at NITW.
-                        </p>
                     </div>
                 </div>
             </div>
+
+            {/* Bottom mask overlays to hide 'Built with Spline' watermark on Desktop */}
+            <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-t from-background-main via-background-main/90 to-transparent z-10 pointer-events-none hidden lg:block"></div>
+            <div className="absolute bottom-0 right-0 w-56 h-16 bg-background-main z-20 pointer-events-none hidden lg:block"></div>
         </section>
 
         {/* ================= NEW IG_TANK PROMO SECTION ================= */}
