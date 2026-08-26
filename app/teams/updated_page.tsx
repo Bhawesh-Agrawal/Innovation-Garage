@@ -362,7 +362,6 @@ export default function Teams() {
                       src="https://randomuser.me/api/portraits/women/68.jpg" 
                       alt="Faculty Advisor" 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                      style={{ imageRendering: "pixelated" }}
                     />
                     <div className="absolute inset-0 border-2 border-transparent group-hover:border-secondary/50 pointer-events-none"></div>
                   </div>
@@ -391,7 +390,6 @@ export default function Teams() {
                       src="/teams/Rohan.png"
                       alt="General Secretary"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      style={{ imageRendering: "pixelated" }}
                     />
                   </div>
                   <div className="text-center sm:text-left flex-1">
@@ -412,7 +410,6 @@ export default function Teams() {
                       src="/teams/Anirvesh.png"
                       alt="General Secretary"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      style={{ imageRendering: "pixelated" }}
                     />
                   </div>
                   <div className="text-center sm:text-left flex-1">
@@ -465,12 +462,11 @@ export default function Teams() {
                     <div className="absolute top-2 right-2 text-white/10 group-hover:text-white/30">
                       {/* <span className="material-symbols-outlined">rocket_launch</span> */}
                     </div>
-                    <div className="w-full aspect-square bg-background-main mb-4 overflow-hidden border border-white/10 grayscale group-hover:grayscale-0 transition-all duration-300">
+                    <div className="w-full aspect-square bg-background-main mb-4 overflow-hidden border border-white/10">
                       <img
                         src={member.img}
                         alt={member.name}
-                        className="w-full h-full object-cover"
-                        style={{ imageRendering: "pixelated" }}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     </div>
                     <h4 className="text-2xl font-bold text-text-main font-arial uppercase tracking-wide">{member.name}</h4>

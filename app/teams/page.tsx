@@ -195,15 +195,9 @@ const teamData = {
       "link": ""
     },
     {
-<<<<<<< HEAD
-      "name": "Aryan Jain",
-      "role": "Associate Member",
-      "dept": "Chemical Dept. - 2nd Year",
-=======
       "name": "Aryan Bheema",
       "role": "Associate Member",
       "dept": "MME Dept. - 2nd Year",
->>>>>>> c7891f384d53730a61669411bd062442d9ccd69c
       "img": "/Innovation Garage Team/Operation/Aryan_Jain.jpg",
       "link": "https://www.linkedin.com/in/aryan-jain-67484b309"
     },
@@ -381,7 +375,7 @@ export default function Teams() {
                   <div key={idx} className="bg-surface-card border-2 border-white/5 p-4 flex flex-col items-center text-center hover:border-white/20 transition-all group relative">
                     <div className="absolute top-2 right-2 text-white/10 group-hover:text-white/30">
                     </div>
-                    <div className="w-full aspect-square bg-background-main mb-4 overflow-hidden border border-white/10 grayscale group-hover:grayscale-0 transition-all duration-300">
+                    <div className="w-full aspect-square bg-background-main mb-4 overflow-hidden border border-white/10">
                       <img 
                         src={member.img} 
                         alt={member.name}

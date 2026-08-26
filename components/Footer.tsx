@@ -1,44 +1,16 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
 import Image from "next/image";
 
 export default function Footer() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"IDLE" | "LOADING" | "SUCCESS" | "ERROR">("IDLE");
-
-  async function handleSubscribe(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email) return;
-    setStatus("LOADING");
-
-    try {
-      const res = await fetch("/api/admin", {
-        method: "POST",
-        body: JSON.stringify({ action: "newsletter", email: email }),
-        headers: { "Content-Type": "application/json" }
-      });
-
-      if (res.ok) {
-        setStatus("SUCCESS");
-        setEmail("");
-        setTimeout(() => setStatus("IDLE"), 3000);
-      } else {
-        setStatus("ERROR");
-      }
-    } catch (error) {
-      setStatus("ERROR");
-    }
-  }
-
   return (
     <footer className="w-full border-t border-white/10 bg-cyber-black pt-16 pb-8 px-6 relative z-10 text-warm-white font-pixel overflow-hidden">
       
       {/* Background Texture */}
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
 
-      {/* ================= TOP SECTION: NAVIGATION & FORM ================= */}
-      <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 relative z-10 mb-16">
+      {/* ================= TOP SECTION: NAVIGATION ================= */}
+      <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 relative z-10 mb-16">
         
         {/* 1. Brand */}
         <div className="flex flex-col gap-4">
@@ -102,35 +74,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* 4. Newsletter */}
-        <div className="flex flex-col gap-4">
-          <h4 className="text-neon-magenta text-xl uppercase tracking-widest border-b border-white/10 pb-2 mb-2 w-fit">Updates</h4>
-          <p className="text-gray-500 text-sm font-display">
-            Join the inner circle. Get notified about hackathons.
-          </p>
-          <form onSubmit={handleSubscribe} className="flex flex-col gap-3">
-            <input 
-                type="email" 
-                placeholder="YOUR@EMAIL.COM" 
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={status === "LOADING" || status === "SUCCESS"}
-                className="bg-surface-card border-2 border-white/20 px-4 py-3 text-white font-pixel placeholder:text-gray-600 focus:border-neon-orange outline-none transition-colors pixel-corners[...]"
-            />
-            <button 
-                type="submit" 
-                disabled={status === "LOADING" || status === "SUCCESS"}
-                className={`px-4 py-3 font-bold font-pixel uppercase tracking-wider pixel-corners border-2 transition-all
-                ${status === "SUCCESS" 
-                    ? "bg-green-500 border-green-500 text-black cursor-default" 
-                    : "bg-transparent border-neon-orange text-neon-orange hover:bg-neon-orange hover:text-black"
-                }`}
-            >
-                {status === "LOADING" ? "TRANSMITTING..." : status === "SUCCESS" ? "REGISTERED!" : status === "ERROR" ? "RETRY?" : "SUBSCRIBE"}
-            </button>
-          </form>
-        </div>
       </div>
 
       {/* ================= BOTTOM SECTION: CREDITS & COPYRIGHT ================= */}
