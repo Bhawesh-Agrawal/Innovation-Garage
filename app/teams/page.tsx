@@ -318,7 +318,6 @@ export default function Teams() {
                         src={leader.img} 
                         alt={leader.name} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                        style={{ imageRendering: "pixelated" }}
                       />
                     </div>
                     <div className="text-center sm:text-left flex-1">
@@ -374,12 +373,11 @@ export default function Teams() {
                   <div key={idx} className="bg-surface-card border-2 border-white/5 p-4 flex flex-col items-center text-center hover:border-white/20 transition-all group relative">
                     <div className="absolute top-2 right-2 text-white/10 group-hover:text-white/30">
                     </div>
-                    <div className="w-full aspect-square bg-background-main mb-4 overflow-hidden border border-white/10 grayscale group-hover:grayscale-0 transition-all duration-300">
+                    <div className="w-full aspect-square bg-background-main mb-4 overflow-hidden border border-white/10">
                       <img 
                         src={member.img} 
                         alt={member.name}
-                        className="w-full h-full object-cover" 
-                        style={{ imageRendering: "pixelated" }}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       />
                     </div>
                     <h4 className="text-2xl font-bold text-text-main font-arial uppercase tracking-wide">{member.name}</h4>
