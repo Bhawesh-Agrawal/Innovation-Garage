@@ -591,6 +591,8 @@ export default function SIHRegisterPage() {
   const [ps1Id, setPs1Id] = useState("");
   const [ps2Type, setPs2Type] = useState("");
   const [ps2Id, setPs2Id] = useState("");
+  const [isCustomPS, setIsCustomPS] = useState(false);
+  const [customPSDetails, setCustomPSDetails] = useState("");
   const [inspiration, setInspiration] = useState("");
   const [approach, setApproach] = useState("");
 
@@ -635,6 +637,8 @@ export default function SIHRegisterPage() {
         if (draft.ps1Type) setPs1Type(draft.ps1Type);
         if (draft.ps2Id) setPs2Id(draft.ps2Id);
         if (draft.ps2Type) setPs2Type(draft.ps2Type);
+        if (draft.isCustomPS) setIsCustomPS(draft.isCustomPS);
+        if (draft.customPSDetails) setCustomPSDetails(draft.customPSDetails);
         if (draft.inspiration) setInspiration(draft.inspiration);
         if (draft.approach) setApproach(draft.approach);
         if (draft.bomLink) setBomLink(draft.bomLink);
@@ -663,6 +667,8 @@ export default function SIHRegisterPage() {
         ps1Type,
         ps2Id,
         ps2Type,
+        isCustomPS,
+        customPSDetails,
         inspiration,
         approach,
         bomLink,
@@ -675,6 +681,7 @@ export default function SIHRegisterPage() {
     }
   }, [
     teamName, track, leader, members, ps1Id, ps1Type, ps2Id, ps2Type,
+    isCustomPS, customPSDetails,
     inspiration, approach, bomLink, consent, declaration
   ]);
 
@@ -739,6 +746,11 @@ export default function SIHRegisterPage() {
       return;
     }
 
+    if (isCustomPS && !customPSDetails.trim()) {
+      showError("Please provide your problem statement and ID.");
+      return;
+    }
+
     setSubmitting(true);
     setSubmitResult(null);
 
@@ -777,10 +789,10 @@ export default function SIHRegisterPage() {
       }
 
       // PS & Details
-      formData.append("ps1Type", ps1Type);
-      formData.append("ps1Id", ps1Id);
-      formData.append("ps2Type", ps2Type);
-      formData.append("ps2Id", ps2Id);
+      formData.append("ps1Type", isCustomPS ? track : ps1Type);
+      formData.append("ps1Id", isCustomPS ? customPSDetails : ps1Id);
+      formData.append("ps2Type", isCustomPS ? "" : ps2Type);
+      formData.append("ps2Id", isCustomPS ? "" : ps2Id);
       formData.append("inspiration", inspiration);
       formData.append("approach", approach);
 
@@ -1096,30 +1108,57 @@ export default function SIHRegisterPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="flex flex-col gap-4 pb-6 border-b border-white/10">
-                        <p className="font-pixel text-xl text-white/60 uppercase tracking-wider">— First PS (Required)</p>
-                        <FormPSSelector
-                          id="ps1-selector" label={`Select ${track} PS 1`} required
-                          value={ps1Id} onChangeId={setPs1Id} onChangeType={setPs1Type}
-                          filterCategory={track as "Software" | "Hardware"}
-                        />
-                        {ps1Type && (
-                          <p className="font-pixel text-sm text-primary">Selected Type: {ps1Type.toUpperCase()}</p>
-                        )}
-                      </div>
-                    <div className="flex flex-col gap-4 pb-6 border-b border-white/10">
-                      <p className="font-pixel text-xl text-white/60 uppercase tracking-wider">— Second PS (Optional)</p>
-                      <FormPSSelector
-                        id="ps2-selector" label="Select PS 2 (optional)"
-                        value={ps2Id} onChangeId={setPs2Id} onChangeType={setPs2Type}
-                      />
-                      {ps2Type && (
-                        <div className="flex items-center gap-4">
-                          <p className="font-pixel text-sm text-primary">Selected Type: {ps2Type.toUpperCase()}</p>
-                          <button type="button" onClick={() => { setPs2Id(""); setPs2Type(""); }} className="font-pixel text-xs text-white/40 hover:text-red-400">Clear</button>
+                      {/* Checkbox for Custom PS */}
+                      <label className="flex items-start gap-4 cursor-pointer group mb-6">
+                        <div onClick={() => setIsCustomPS((v) => !v)}
+                          className={`w-6 h-6 border-2 shrink-0 mt-0.5 flex items-center justify-center transition-colors cursor-pointer ${isCustomPS ? "bg-primary border-primary" : "border-white/30 group-hover:border-primary/50"
+                            }`}>
+                          {isCustomPS && <span className="material-symbols-outlined text-white text-base">check</span>}
                         </div>
+                        <span className="font-pixel text-xl text-white/70 leading-relaxed">
+                          My problem statement is not listed
+                        </span>
+                      </label>
+
+                      {isCustomPS ? (
+                        <div className="flex flex-col gap-2 pb-6 border-b border-white/10">
+                          <label htmlFor="customPSDetails" className="font-pixel text-xl text-text-main uppercase tracking-wider">
+                            Problem Statement & ID<span className="text-primary ml-1">*</span>
+                          </label>
+                          <p className="font-pixel text-sm text-white/40">Write your problem statement along with the problem ID.</p>
+                          <textarea id="customPSDetails" required rows={4} maxLength={2000}
+                            placeholder="e.g. SIH1234 - Real-time tracking system..." value={customPSDetails}
+                            onChange={(e) => setCustomPSDetails(e.target.value)}
+                            className="bg-background-main border-2 border-white/20 text-text-main font-pixel text-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-white/20 resize-none" />
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex flex-col gap-4 pb-6 border-b border-white/10">
+                            <p className="font-pixel text-xl text-white/60 uppercase tracking-wider">— First PS (Required)</p>
+                            <FormPSSelector
+                              id="ps1-selector" label={`Select ${track} PS 1`} required
+                              value={ps1Id} onChangeId={setPs1Id} onChangeType={setPs1Type}
+                              filterCategory={track as "Software" | "Hardware"}
+                            />
+                            {ps1Type && (
+                              <p className="font-pixel text-sm text-primary">Selected Type: {ps1Type.toUpperCase()}</p>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-4 pb-6 border-b border-white/10">
+                            <p className="font-pixel text-xl text-white/60 uppercase tracking-wider">— Second PS (Optional)</p>
+                            <FormPSSelector
+                              id="ps2-selector" label="Select PS 2 (optional)"
+                              value={ps2Id} onChangeId={setPs2Id} onChangeType={setPs2Type}
+                            />
+                            {ps2Type && (
+                              <div className="flex items-center gap-4">
+                                <p className="font-pixel text-sm text-primary">Selected Type: {ps2Type.toUpperCase()}</p>
+                                <button type="button" onClick={() => { setPs2Id(""); setPs2Type(""); }} className="font-pixel text-xs text-white/40 hover:text-red-400">Clear</button>
+                              </div>
+                            )}
+                          </div>
+                        </>
                       )}
-                    </div>
                     <div className="flex flex-col gap-2">
                       <label htmlFor="inspiration" className="font-pixel text-xl text-text-main uppercase tracking-wider">
                         What inspired your team?<span className="text-primary ml-1">*</span>
@@ -1180,7 +1219,7 @@ export default function SIHRegisterPage() {
                         {consent && <span className="material-symbols-outlined text-white text-base">check</span>}
                       </div>
                       <span className="font-pixel text-xl text-white/70 leading-relaxed">
-                        Yes, I give consent for my details and event media to be used for documentation.
+                        Presence of every team member during the whole Hackathon is compulsory.
                         <span className="text-primary ml-1">*</span>
                       </span>
                     </label>
