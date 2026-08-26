@@ -227,20 +227,33 @@ function invalidateSheetCache() {
   lastCacheTime = 0;
 }
 
-async function checkDuplicateEmail(email: string): Promise<boolean> {
+async function checkDuplicateEmail(emails: string[]): Promise<boolean> {
   try {
     const rows = await getSheetDataCached();
     if (!rows || rows.length === 0) return false;
 
-    // Find the column index for "Authenticated Email" from the header row
+    // Find the column indices for all email fields
     const headers = rows[0];
-    const emailColIdx = headers.indexOf("Authenticated Email");
-    if (emailColIdx === -1) return false;
+    const emailCols = [
+      headers.indexOf("Authenticated Email"),
+      headers.indexOf("Leader Email"),
+      headers.indexOf("Member 1 Email"),
+      headers.indexOf("Member 2 Email"),
+      headers.indexOf("Member 3 Email"),
+      headers.indexOf("Member 4 Email"),
+      headers.indexOf("Member 5 Email")
+    ].filter(idx => idx !== -1);
+
+    if (emailCols.length === 0) return false;
 
     // Check all data rows for a matching email
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      if (row[emailColIdx] === email) return true;
+      for (const colIdx of emailCols) {
+        if (row[colIdx] && emails.includes(row[colIdx])) {
+          return true;
+        }
+      }
     }
 
     return false;
@@ -349,16 +362,33 @@ export async function GET(req: Request) {
     }
 
     const headers = rows[0];
-    const emailColIdx = headers.indexOf("Authenticated Email");
-    if (emailColIdx === -1) {
+    const emailCols = [
+      headers.indexOf("Authenticated Email"),
+      headers.indexOf("Leader Email"),
+      headers.indexOf("Member 1 Email"),
+      headers.indexOf("Member 2 Email"),
+      headers.indexOf("Member 3 Email"),
+      headers.indexOf("Member 4 Email"),
+      headers.indexOf("Member 5 Email")
+    ].filter(idx => idx !== -1);
+
+    if (emailCols.length === 0) {
       return NextResponse.json({ success: true, authenticated: true, registered: false });
     }
 
     // Find the row
     let userRow: any[] | null = null;
     for (let i = 1; i < rows.length; i++) {
-      if (rows[i][emailColIdx] === email) {
-        userRow = rows[i];
+      const row = rows[i];
+      let found = false;
+      for (const colIdx of emailCols) {
+        if (row[colIdx] === email) {
+          found = true;
+          break;
+        }
+      }
+      if (found) {
+        userRow = row;
         break; // found the registration
       }
     }
@@ -656,7 +686,13 @@ export async function POST(req: Request) {
     }
 
     // ── 13. DUPLICATE EMAIL CHECK (query Google Sheet) ─────────────────────
-    const isDuplicate = await checkDuplicateEmail(tokenPayload.email);
+    const emailsToCheck = [
+      tokenPayload.email,
+      leaderEmail,
+      ...memberData.map((m) => m.email).filter(Boolean)
+    ];
+
+    const isDuplicate = await checkDuplicateEmail(emailsToCheck);
     if (isDuplicate) {
       // Commit rate limit since they are already registered
       commitAccountRateLimit(googleSub);
@@ -664,7 +700,7 @@ export async function POST(req: Request) {
         {
           success: false,
           error:
-            "This email has already been used to register a team. Each Google account can only register one team. Contact ig@nitw.ac.in if this is an error.",
+            "One or more emails provided (including your authenticated email) have already been used to register a team. Each email can only be part of one team. Contact ig@nitw.ac.in if this is an error.",
         },
         { status: 409, headers }
       );
