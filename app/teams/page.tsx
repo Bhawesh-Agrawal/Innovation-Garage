@@ -324,7 +324,7 @@ export default function Teams() {
                     <div className="text-center sm:text-left flex-1">
                       <h3 className="text-3xl font-bold text-text-main font-arial mb-2 uppercase">{leader.name}</h3>
                       <div className="inline-block bg-primary/10 px-2 py-0.5 mb-3 border border-primary/20">
-                        <p className="text-primary text-lg font-bold uppercase tracking-wide font-pixel">General Secretary</p>
+                        <p className="text-primary text-lg font-bold uppercase tracking-wide font-pixel">{leader.role}</p>
                       </div>
                       <p className="text-gray-400 text-lg mb-6 leading-tight font-pixel">{leader.dept}</p>
                       {leader.link && (
