@@ -190,21 +190,46 @@ async function uploadBomToDrive(file: File, teamName: string): Promise<string> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GOOGLE SHEET HELPERS
+// GOOGLE SHEET HELPERS & CACHING
 // ─────────────────────────────────────────────────────────────────────────────
-async function checkDuplicateEmail(email: string): Promise<boolean> {
+let cachedSheetData: any[][] | null = null;
+let lastCacheTime = 0;
+const CACHE_TTL_MS = 30 * 1000; // 30 seconds cache
+
+async function getSheetDataCached(): Promise<any[][] | null> {
+  const now = Date.now();
+  if (cachedSheetData && now - lastCacheTime < CACHE_TTL_MS) {
+    return cachedSheetData;
+  }
+
   const auth = getGoogleAuth();
   const sheets = google.sheets({ version: "v4", auth });
   const sheetId = process.env.GOOGLE_SHEET_ID;
-  if (!sheetId) return false;
+  if (!sheetId) return null;
 
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: "A:Z", // Read all columns
+      range: "A:BZ", // Read sufficient columns
     });
+    cachedSheetData = response.data.values || [];
+    lastCacheTime = now;
+    return cachedSheetData;
+  } catch (e) {
+    console.error("Error fetching sheet data:", e);
+    if (cachedSheetData) return cachedSheetData;
+    return null;
+  }
+}
 
-    const rows = response.data.values;
+function invalidateSheetCache() {
+  cachedSheetData = null;
+  lastCacheTime = 0;
+}
+
+async function checkDuplicateEmail(email: string): Promise<boolean> {
+  try {
+    const rows = await getSheetDataCached();
     if (!rows || rows.length === 0) return false;
 
     // Find the column index for "Authenticated Email" from the header row
@@ -228,18 +253,8 @@ async function checkDuplicateEmail(email: string): Promise<boolean> {
 }
 
 async function checkDuplicateTeamName(teamName: string): Promise<boolean> {
-  const auth = getGoogleAuth();
-  const sheets = google.sheets({ version: "v4", auth });
-  const sheetId = process.env.GOOGLE_SHEET_ID;
-  if (!sheetId) return false;
-
   try {
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: "A:Z", // Read all columns
-    });
-
-    const rows = response.data.values;
+    const rows = await getSheetDataCached();
     if (!rows || rows.length === 0) return false;
 
     // Find the column index for "Team Name" from the header row
@@ -273,13 +288,9 @@ async function submitToSheet(rowData: Record<string, string>): Promise<void> {
   const keys = Object.keys(rowData);
   const values = Object.values(rowData);
 
-  // Check if sheet is empty (needs headers)
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: sheetId,
-    range: "A1:Z1",
-  });
-
-  const needsHeaders = !response.data.values || response.data.values.length === 0;
+  // Check if sheet is empty (needs headers) using cache to avoid an extra API call
+  const rows = await getSheetDataCached();
+  const needsHeaders = !rows || rows.length === 0;
 
   const resource = {
     values: needsHeaders ? [keys, values] : [values],
@@ -292,6 +303,9 @@ async function submitToSheet(rowData: Record<string, string>): Promise<void> {
     insertDataOption: "INSERT_ROWS",
     requestBody: resource,
   });
+
+  // Invalidate cache so subsequent reads get the newly inserted row
+  invalidateSheetCache();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -328,24 +342,8 @@ export async function GET(req: Request) {
 
     const email = tokenPayload.email;
 
-    const auth = getGoogleAuth();
-    const sheets = google.sheets({ version: "v4", auth });
-    const sheetId = process.env.GOOGLE_SHEET_ID;
-
-    if (!sheetId) {
-      return NextResponse.json(
-        { success: false, error: "Server configuration error: GOOGLE_SHEET_ID missing" },
-        { status: 500 }
-      );
-    }
-
-    // Fetch up to BZ columns to cover all potential member & project fields
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: "A:BZ",
-    });
-
-    const rows = response.data.values;
+    // Fetch rows via our cached helper to avoid rate limits
+    const rows = await getSheetDataCached();
     if (!rows || rows.length === 0) {
       return NextResponse.json({ success: true, authenticated: true, registered: false });
     }
