@@ -725,6 +725,7 @@ import Footer from "@/components/Footer";
 import InteractiveNodes from "@/components/InteractiveNodes"; // <--- Updated Import
 import IdeasPromo from "@/components/IdeasPromo";
 import { Analytics } from "@vercel/analytics/next"
+
 // Past Events Data
 const pastEvents = [
   {
@@ -740,7 +741,7 @@ const pastEvents = [
   {
     id: 2,
     title: "Ignite 36",
-    description: "A 36-hour hackathon where teams built and pitched solutions to problem statements. Ideas went from concept to demo fast.",
+    description: "A 48-hour hackathon where teams built and pitched solutions to problem statements. Ideas went from concept to demo fast.",
     date: "Sept 27-28, 2025",
     tag: "Hackathon",
     image: "/events/ignite36.jpeg",
@@ -826,6 +827,8 @@ export default function Home() {
                 <p className="max-w-2xl text-text-main/70 text-lg md:text-xl font-display mt-6 bg-background-main/50 backdrop-blur-md p-6 border border-white/10 pixel-corners pointer-events-auto">
                     Welcome to the <span className="text-primary font-bold">Innovation Garage</span>. A hands-on community to build, experiment, and explore.
                 </p>
+
+
             </div>
         </header>
 
@@ -1165,7 +1168,7 @@ export default function Home() {
 //   {
 //     id: 2,
 //     title: "Ignite 36",
-//     description: "A 36-hour hackathon where teams built and pitched solutions to problem statements. Ideas went from concept to demo fast.",
+//     description: "A 48-hour hackathon where teams built and pitched solutions to problem statements. Ideas went from concept to demo fast.",
 //     date: "Sept 27-28, 2025",
 //     tag: "Hackathon",
 //     image: "/events/ignite36.jpeg",

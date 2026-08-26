@@ -46,7 +46,7 @@ export default function IdeasPromo() {
                     <span>Hackathon</span>
                 </div>
                 <div>
-                    <span className="block text-2xl text-white">36H</span>
+                    <span className="block text-2xl text-white">48H</span>
                     <span>Non-stop Coding</span>
                 </div>
             </div>

@@ -175,10 +175,10 @@ function LiveTimer() {
             )}
           </div>
 
-          {/* 36 HRS total indicator */}
+          {/* 48 HRS total indicator */}
           {isRunning && (
             <p className="text-white/30 font-pixel text-lg tracking-widest">
-              / 36:00:00 Total
+              / 48:00:00 Total
             </p>
           )}
         </div>
@@ -384,8 +384,8 @@ export default function SIHPage() {
             <div className="max-w-2xl text-center">
               <p className="text-white/50 font-pixel text-lg leading-relaxed mb-4">
                 Register for IG&apos;s{" "}
-                <span className="text-primary">36 Hour-Hackathon</span> in
-                collaboration with{" "}
+                <span className="text-primary">48 Hour-Hackathon</span> in
+                collaboration with {" "}
                 <span className="text-secondary">
                   Smart India Hackathon (SIH) 2026!
                 </span>
@@ -618,11 +618,11 @@ export default function SIHPage() {
           <section className="flex flex-col items-center gap-8">
             <div className="flex flex-col items-center gap-2">
               <h2 className="text-3xl md:text-5xl font-pixel text-text-main uppercase tracking-widest">
-                36 Hour Hackathon
+                48 Hour Hackathon
               </h2>
               <div className="h-1 w-32 bg-gradient-to-r from-secondary via-white to-primary mx-auto" />
               <p className="text-white/40 font-pixel text-xl">
-                36 Hours of Pure Innovation
+                48 Hours of Pure Innovation
               </p>
             </div>
             {/* <LiveTimer /> */}
@@ -799,7 +799,7 @@ export default function SIHPage() {
                 <span className="text-primary">Innovate!</span>
               </p>
               <p className="text-white/50 font-pixel text-xl max-w-lg leading-relaxed">
-                IG&apos;s bringing the challenge <em>and</em> the goodies. 36 hours of
+                IG&apos;s bringing the challenge <em>and</em> the goodies. 48 hours of
                 pure innovation and creativity.
               </p>
               {loading ? (
