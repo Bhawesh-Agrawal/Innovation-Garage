@@ -68,7 +68,7 @@ const teamData = {
       "name": "Rahil Jain",
       "role": "Associate Member",
       "dept": "EEE Dept. - 2nd Year",
-      "img": "/Innovation Garage Team/SF and Outreach/Rahil_Jain.jpg",
+      "img": "/Innovation Garage Team/SF and Outreach/Rahil_Jain.JPG.jpeg",
       "link": "https://www.linkedin.com/in/rahil-jain-a57a2a375"
     },
     {
