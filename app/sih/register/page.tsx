@@ -1194,7 +1194,8 @@ export default function SIHRegisterPage() {
                         Google Drive Link to BOM PDF<span className="text-primary ml-1">*</span>
                       </label>
                       <p className="font-pixel text-sm text-white/40">
-                        Please add the PDF to Google Drive and ensure anyone with the link is able to view it. If the access is not provided, the registration can be rejected.
+                        Please add the PDF to Google Drive and ensure anyone with the link is able to view it. If the access is not provided, the registration can be rejected.<br/>
+                        <span className="text-red-400 font-bold mt-2 inline-block">Note: Total Bill should be strictly below 3000.</span>
                       </p>
                       <input
                         id="bom-link"
@@ -1208,6 +1209,26 @@ export default function SIHRegisterPage() {
                     </div>
                   </div>
                 )}
+
+                {/* ── FACULTY MENTOR ───────────────────────────────────────── */}
+                <div className="bg-surface-card border-2 border-primary/40 p-6 flex flex-col gap-5">
+                  <SectionHeader number="FM" title="Faculty Mentor (Optional)"
+                    subtitle="If your group wants to work under any specific mentor, mention their name here." />
+                  
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="faculty-mentor" className="font-pixel text-xl text-text-main uppercase tracking-wider">
+                      Faculty Mentor Name
+                    </label>
+                    <input
+                      id="faculty-mentor"
+                      type="text"
+                      placeholder="e.g. Dr. John Doe"
+                      value={facultyMentor}
+                      onChange={(e) => setFacultyMentor(e.target.value)}
+                      className="bg-background-main border-2 border-white/20 text-text-main font-pixel text-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-white/20"
+                    />
+                  </div>
+                </div>
 
                 {/* ── CONSENT & DECLARATION ────────────────────────────────── */}
                 <div className="bg-surface-card border-2 border-white/10 p-6 flex flex-col gap-5">
