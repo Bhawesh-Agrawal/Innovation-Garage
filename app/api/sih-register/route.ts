@@ -298,12 +298,18 @@ async function submitToSheet(rowData: Record<string, string>): Promise<void> {
 
   if (!sheetId) throw new Error("Missing GOOGLE_SHEET_ID");
 
-  const keys = Object.keys(rowData);
-  const values = Object.values(rowData);
-
   // Check if sheet is empty (needs headers) using cache to avoid an extra API call
   const rows = await getSheetDataCached();
   const needsHeaders = !rows || rows.length === 0;
+
+  let keys, values;
+  if (needsHeaders) {
+    keys = Object.keys(rowData);
+    values = Object.values(rowData);
+  } else {
+    keys = rows[0]; // Use existing headers to ensure column alignment
+    values = keys.map((key: string) => rowData[key] || "");
+  }
 
   const resource = {
     values: needsHeaders ? [keys, values] : [values],
@@ -313,7 +319,7 @@ async function submitToSheet(rowData: Record<string, string>): Promise<void> {
     spreadsheetId: sheetId,
     range: "A1",
     valueInputOption: "USER_ENTERED",
-    insertDataOption: "INSERT_ROWS",
+    insertDataOption: "OVERWRITE",
     requestBody: resource,
   });
 

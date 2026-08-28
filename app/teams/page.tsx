@@ -2,6 +2,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useState } from "react";
+import Image from "next/image";
 
 const leadershipData = [
   {
@@ -68,7 +69,7 @@ const teamData = {
       "name": "Rahil Jain",
       "role": "Associate Member",
       "dept": "EEE Dept. - 2nd Year",
-      "img": "/Innovation Garage Team/SF and Outreach/Rahil_Jain.jpg",
+      "img": "/Innovation Garage Team/SF and Outreach/Rahil_Jain.JPG.jpeg",
       "link": "https://www.linkedin.com/in/rahil-jain-a57a2a375"
     },
     {
@@ -313,13 +314,13 @@ export default function Teams() {
                   <div className="absolute top-4 right-4 opacity-50">
                   </div>
                   <div className="flex flex-col sm:flex-row gap-8 items-center sm:items-start">
-                    <div className="w-32 h-32 overflow-hidden border-2 border-primary shrink-0 bg-background-main">
-                      <img 
+                    <div className="w-32 h-32 overflow-hidden border-2 border-primary shrink-0 bg-background-main relative">
+                      <Image 
                         src={leader.img} 
                         alt={leader.name} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                        loading="lazy"
-                        decoding="async"
+                        fill
+                        sizes="(max-width: 768px) 128px, 128px"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500" 
                       />
                     </div>
                     <div className="text-center sm:text-left flex-1">
@@ -375,13 +376,13 @@ export default function Teams() {
                   <div key={idx} className="bg-surface-card border-2 border-white/5 p-4 flex flex-col items-center text-center hover:border-white/20 transition-all group relative">
                     <div className="absolute top-2 right-2 text-white/10 group-hover:text-white/30">
                     </div>
-                    <div className="w-full aspect-square bg-background-main mb-4 overflow-hidden border border-white/10">
-                      <img 
+                    <div className="w-full aspect-square bg-background-main mb-4 overflow-hidden border border-white/10 relative">
+                      <Image 
                         src={member.img} 
-                        alt={member.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                        loading="lazy"
-                        decoding="async"
+                        alt={member.name} 
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover group-hover:scale-110 transition-transform duration-500" 
                       />
                     </div>
                     <h4 className="text-2xl font-bold text-text-main font-arial uppercase tracking-wide">{member.name}</h4>

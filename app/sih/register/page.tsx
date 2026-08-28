@@ -603,6 +603,7 @@ export default function SIHRegisterPage() {
   const [consent, setConsent] = useState(false);
   const [declaration, setDeclaration] = useState(false);
   const [facultyMentor, setFacultyMentor] = useState("");
+  const [hasFacultyMentor, setHasFacultyMentor] = useState(false);
 
   // Form state
   const [submitting, setSubmitting] = useState(false);
@@ -644,6 +645,8 @@ export default function SIHRegisterPage() {
         if (draft.bomLink) setBomLink(draft.bomLink);
         if (draft.consent) setConsent(draft.consent);
         if (draft.declaration) setDeclaration(draft.declaration);
+        if (draft.hasFacultyMentor !== undefined) setHasFacultyMentor(draft.hasFacultyMentor);
+        if (draft.facultyMentor) setFacultyMentor(draft.facultyMentor);
       }
     } catch (e) {
       console.error("Error loading draft from localStorage:", e);
@@ -674,6 +677,8 @@ export default function SIHRegisterPage() {
         bomLink,
         consent,
         declaration,
+        hasFacultyMentor,
+        facultyMentor,
       };
       localStorage.setItem("sih_form_draft", JSON.stringify(draft));
     } catch (e) {
@@ -682,7 +687,7 @@ export default function SIHRegisterPage() {
   }, [
     teamName, track, leader, members, ps1Id, ps1Type, ps2Id, ps2Type,
     isCustomPS, customPSDetails,
-    inspiration, approach, bomLink, consent, declaration
+    inspiration, approach, bomLink, consent, declaration, hasFacultyMentor, facultyMentor
   ]);
 
   // reCAPTCHA removed — not required
@@ -802,7 +807,7 @@ export default function SIHRegisterPage() {
       }
 
       // Additional
-      formData.append("facultyMentor", facultyMentor);
+      formData.append("facultyMentor", hasFacultyMentor ? facultyMentor : "");
       formData.append("consent", "Yes");
       formData.append("declaration", "Yes");
 
@@ -1212,22 +1217,36 @@ export default function SIHRegisterPage() {
 
                 {/* ── FACULTY MENTOR ───────────────────────────────────────── */}
                 <div className="bg-surface-card border-2 border-primary/40 p-6 flex flex-col gap-5">
-                  <SectionHeader number="FM" title="Faculty Mentor (Optional)"
-                    subtitle="If your group wants to work under any specific mentor, mention their name here." />
+                  <SectionHeader number="FM" title="Faculty Mentor"
+                    subtitle="It is not mandatory to have a faculty mentor." />
                   
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="faculty-mentor" className="font-pixel text-xl text-text-main uppercase tracking-wider">
-                      Faculty Mentor Name
-                    </label>
-                    <input
-                      id="faculty-mentor"
-                      type="text"
-                      placeholder="e.g. Dr. John Doe"
-                      value={facultyMentor}
-                      onChange={(e) => setFacultyMentor(e.target.value)}
-                      className="bg-background-main border-2 border-white/20 text-text-main font-pixel text-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-white/20"
-                    />
-                  </div>
+                  <label className="flex items-start gap-4 cursor-pointer group">
+                    <div onClick={() => setHasFacultyMentor((v) => !v)}
+                      className={`w-6 h-6 border-2 shrink-0 mt-0.5 flex items-center justify-center transition-colors cursor-pointer ${hasFacultyMentor ? "bg-primary border-primary" : "border-white/30 group-hover:border-primary/50"
+                        }`}>
+                      {hasFacultyMentor && <span className="material-symbols-outlined text-white text-base">check</span>}
+                    </div>
+                    <span className="font-pixel text-xl text-white/70 leading-relaxed">
+                      Check this box if your team has a faculty mentor
+                    </span>
+                  </label>
+
+                  {hasFacultyMentor && (
+                    <div className="flex flex-col gap-2 mt-2">
+                      <label htmlFor="faculty-mentor" className="font-pixel text-xl text-text-main uppercase tracking-wider">
+                        Faculty Mentor's Name<span className="text-primary ml-1">*</span>
+                      </label>
+                      <input
+                        id="faculty-mentor"
+                        type="text"
+                        required={hasFacultyMentor}
+                        placeholder="e.g. Dr. John Doe"
+                        value={facultyMentor}
+                        onChange={(e) => setFacultyMentor(e.target.value)}
+                        className="bg-background-main border-2 border-white/20 text-text-main font-pixel text-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-white/20"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* ── CONSENT & DECLARATION ────────────────────────────────── */}
