@@ -395,7 +395,7 @@ export default function Teams() {
                   <div className="text-center sm:text-left flex-1">
                     <h3 className="text-3xl font-bold text-text-main font-arial mb-2 uppercase">Rohan</h3>
                     <div className="inline-block bg-primary/10 px-2 py-0.5 mb-3 border border-primary/20">
-                      <p className="text-primary text-lg font-bold uppercase tracking-wide font-pixel">General Secretary</p>
+                      <p className="text-primary text-lg font-bold uppercase tracking-wide font-pixel">General Manager</p>
                     </div>
                     <p className="text-gray-400 text-lg mb-6 leading-tight font-pixel">4rth Year</p>
                     <a className="inline-flex items-center gap-2 text-lg text-cyber-lavender hover:text-primary transition-colors uppercase border-b border-cyber-lavender/30 hover:border-primary pb-0.5 font-pixel" href="https://www.linkedin.com/in/rohan-j-568b21252/?originalSubdomain=in">
@@ -415,7 +415,7 @@ export default function Teams() {
                   <div className="text-center sm:text-left flex-1">
                     <h3 className="text-3xl font-bold text-text-main font-arial mb-2 uppercase">Anirvesh</h3>
                     <div className="inline-block bg-primary/10 px-2 py-0.5 mb-3 border border-primary/20">
-                      <p className="text-primary text-lg font-bold uppercase tracking-wide font-pixel">General Secretary</p>
+                      <p className="text-primary text-lg font-bold uppercase tracking-wide font-pixel">General Manager</p>
                     </div>
                     <p className="text-gray-400 text-lg mb-6 leading-tight font-pixel">4rth Year</p>
                     <a className="inline-flex items-center gap-2 text-lg text-cyber-lavender hover:text-primary transition-colors uppercase border-b border-cyber-lavender/30 hover:border-primary pb-0.5 font-pixel" href="https://www.linkedin.com/in/anirvesh-mangipudi-7112222b7/">
