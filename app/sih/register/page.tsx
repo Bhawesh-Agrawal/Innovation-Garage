@@ -188,11 +188,11 @@ function FormPSSelector({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filtered = SIH_PROBLEM_STATEMENTS.filter(ps => 
+  const filtered = SIH_PROBLEM_STATEMENTS.filter(ps =>
     (!filterCategory || ps.category === filterCategory) &&
     (ps.ps_number.toLowerCase().includes(search.toLowerCase()) ||
-    ps.title.toLowerCase().includes(search.toLowerCase()) ||
-    ps.theme.toLowerCase().includes(search.toLowerCase()))
+      ps.title.toLowerCase().includes(search.toLowerCase()) ||
+      ps.theme.toLowerCase().includes(search.toLowerCase()))
   );
 
   const selectedPS = SIH_PROBLEM_STATEMENTS.find(ps => ps.ps_number === value);
@@ -202,7 +202,7 @@ function FormPSSelector({
       <label htmlFor={id} className="font-pixel text-xl text-text-main uppercase tracking-wider">
         {label}{required && <span className="text-primary ml-1">*</span>}
       </label>
-      <div 
+      <div
         className={`bg-background-main border-2 px-4 py-3 cursor-pointer flex justify-between items-center transition-colors ${isOpen ? 'border-primary' : 'border-white/20 hover:border-white/40'}`}
         onClick={() => setIsOpen(!isOpen)}
       >
@@ -218,9 +218,9 @@ function FormPSSelector({
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-surface-card border-2 border-primary z-50 max-h-[400px] flex flex-col shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
           <div className="p-3 border-b-2 border-white/10 sticky top-0 bg-surface-card z-10">
-            <input 
-              type="text" 
-              placeholder="Search by ID, title, or theme..." 
+            <input
+              type="text"
+              placeholder="Search by ID, title, or theme..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-background-main border-2 border-white/20 px-3 py-2 text-white font-pixel text-base focus:outline-none focus:border-primary placeholder:text-white/30"
@@ -232,7 +232,7 @@ function FormPSSelector({
               <div className="p-6 text-white/40 font-pixel text-center">No results found</div>
             ) : (
               filtered.map(ps => (
-                <div 
+                <div
                   key={ps.ps_number}
                   className={`p-3 cursor-pointer border-2 transition-colors ${value === ps.ps_number ? 'border-primary bg-primary/10' : 'border-transparent hover:border-white/10 hover:bg-white/5'}`}
                   onClick={() => {
@@ -422,7 +422,7 @@ function GoogleSignInStep({ onSignIn }: { onSignIn: (user: GoogleUser) => void }
           Google OAuth is not configured. Please contact the organisers.
         </p>
         {process.env.NODE_ENV === "development" && (
-          <button 
+          <button
             onClick={async () => {
               const token = "dev_bypass_token";
               try {
@@ -856,12 +856,12 @@ export default function SIHRegisterPage() {
             <h1 className="text-3xl md:text-5xl font-pixel text-text-main uppercase tracking-wider">
               Registration Successful
             </h1>
-            
+
             <div className="flex flex-col gap-6 text-left w-full border-t border-b border-white/10 py-6 my-2">
               <p className="text-xl text-white leading-relaxed">
                 Congrats your registration is successful, we will communicate with you if your team is selected.
               </p>
-              
+
               <div className="flex flex-col gap-4">
                 <div className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-secondary mt-0.5">chevron_right</span>
@@ -876,10 +876,10 @@ export default function SIHRegisterPage() {
                     <p className="text-lg text-white/70 leading-relaxed">
                       Join the WhatsApp group for any updates:
                     </p>
-                    <a 
-                      href="https://chat.whatsapp.com/IZ2kBqx76QO8DyIdo1HF3U?s=cl&p=a&ilr=4" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
+                    <a
+                      href="https://chat.whatsapp.com/IZ2kBqx76QO8DyIdo1HF3U?s=cl&p=a&ilr=4"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-secondary hover:underline text-lg break-all font-sans"
                     >
                       https://chat.whatsapp.com/IZ2kBqx76QO8DyIdo1HF3U?s=cl&p=a&ilr=4
@@ -1045,41 +1045,41 @@ export default function SIHRegisterPage() {
 
                 {/* ── SECTION 3: TEAM LEADER ───────────────────────────────── */}
                 <div className="bg-surface-card border-2 border-white/10 p-6 flex flex-col gap-5">
-                    <SectionHeader number="02" title="Team Leader Details"
-                      subtitle="The team leader is the primary point of contact." />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <FormInput id="leader-name" label="Full Name" required placeholder="e.g. Priya Sharma"
-                        value={leader.fullName} onChange={(v) => setLeader((p) => ({ ...p, fullName: v }))} maxLength={50} />
-                      <FormInput id="leader-roll" label="Roll Number" required placeholder="e.g. 22CS1001"
-                        value={leader.rollNumber} onChange={(v) => setLeader((p) => ({ ...p, rollNumber: v }))} maxLength={20} />
-                      <FormInput id="leader-year" label="Year & Department" required placeholder="e.g. 3rd Year — CSE"
-                        value={leader.yearAndDept} onChange={(v) => setLeader((p) => ({ ...p, yearAndDept: v }))} maxLength={50} />
-                      <FormInput id="leader-email" label="Email Address" required type="email"
-                        placeholder="e.g. 22cs1001@student.nitw.ac.in"
-                        value={leader.email} onChange={(v) => setLeader((p) => ({ ...p, email: v }))} maxLength={80} />
-                      <FormInput id="leader-phone" label="Phone Number" required type="tel"
-                        placeholder="e.g. 9876543210"
-                        value={leader.phone} onChange={(v) => setLeader((p) => ({ ...p, phone: v }))} maxLength={10} />
-                    </div>
-                    {/* Leader Gender */}
-                    <div className="flex flex-col gap-2">
-                      <span className="font-pixel text-xl text-text-main uppercase tracking-wider">
-                        Gender<span className="text-primary ml-1">*</span>
-                      </span>
-                      <div className="flex flex-wrap gap-4">
-                        {GENDERS.map((g) => (
-                          <label key={g} className={`flex items-center gap-2 cursor-pointer px-4 py-2 border-2 font-pixel text-xl transition-colors ${leader.gender === g ? "border-secondary bg-secondary/10 text-text-main" : "border-white/20 text-white/50 hover:border-white/40"
-                            }`}>
-                            <input type="radio" name="leader-gender" value={g}
-                              checked={leader.gender === g}
-                              onChange={() => setLeader((p) => ({ ...p, gender: g }))} className="sr-only" />
-                            <span className={`w-3 h-3 border-2 inline-block shrink-0 ${leader.gender === g ? "bg-secondary border-secondary" : "border-white/40"}`} />
-                            {g}
-                          </label>
-                        ))}
-                      </div>
+                  <SectionHeader number="02" title="Team Leader Details"
+                    subtitle="The team leader is the primary point of contact." />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <FormInput id="leader-name" label="Full Name" required placeholder="e.g. Priya Sharma"
+                      value={leader.fullName} onChange={(v) => setLeader((p) => ({ ...p, fullName: v }))} maxLength={50} />
+                    <FormInput id="leader-roll" label="Roll Number" required placeholder="e.g. 22CS1001"
+                      value={leader.rollNumber} onChange={(v) => setLeader((p) => ({ ...p, rollNumber: v }))} maxLength={20} />
+                    <FormInput id="leader-year" label="Year & Department" required placeholder="e.g. 3rd Year — CSE"
+                      value={leader.yearAndDept} onChange={(v) => setLeader((p) => ({ ...p, yearAndDept: v }))} maxLength={50} />
+                    <FormInput id="leader-email" label="Email Address" required type="email"
+                      placeholder="e.g. 22cs1001@student.nitw.ac.in"
+                      value={leader.email} onChange={(v) => setLeader((p) => ({ ...p, email: v }))} maxLength={80} />
+                    <FormInput id="leader-phone" label="Phone Number" required type="tel"
+                      placeholder="e.g. 9876543210"
+                      value={leader.phone} onChange={(v) => setLeader((p) => ({ ...p, phone: v }))} maxLength={10} />
+                  </div>
+                  {/* Leader Gender */}
+                  <div className="flex flex-col gap-2">
+                    <span className="font-pixel text-xl text-text-main uppercase tracking-wider">
+                      Gender<span className="text-primary ml-1">*</span>
+                    </span>
+                    <div className="flex flex-wrap gap-4">
+                      {GENDERS.map((g) => (
+                        <label key={g} className={`flex items-center gap-2 cursor-pointer px-4 py-2 border-2 font-pixel text-xl transition-colors ${leader.gender === g ? "border-secondary bg-secondary/10 text-text-main" : "border-white/20 text-white/50 hover:border-white/40"
+                          }`}>
+                          <input type="radio" name="leader-gender" value={g}
+                            checked={leader.gender === g}
+                            onChange={() => setLeader((p) => ({ ...p, gender: g }))} className="sr-only" />
+                          <span className={`w-3 h-3 border-2 inline-block shrink-0 ${leader.gender === g ? "bg-secondary border-secondary" : "border-white/40"}`} />
+                          {g}
+                        </label>
+                      ))}
                     </div>
                   </div>
+                </div>
 
 
                 {/* ── SECTIONS 4–8: TEAM MEMBERS ──────────────────────────── */}
@@ -1106,7 +1106,7 @@ export default function SIHRegisterPage() {
                 <div className="bg-surface-card border-2 border-white/10 p-6 flex flex-col gap-5">
                   <SectionHeader number="09" title="Problem Statements"
                     subtitle="Visit sih.gov.in for the complete list of problem statements." />
-                  
+
                   {!track ? (
                     <div className="bg-primary/10 border border-primary p-4 rounded text-white/70">
                       Please select a Track (Software/Hardware) in the previous section first.
@@ -1164,26 +1164,26 @@ export default function SIHRegisterPage() {
                           </div>
                         </>
                       )}
-                    <div className="flex flex-col gap-2">
-                      <label htmlFor="inspiration" className="font-pixel text-xl text-text-main uppercase tracking-wider">
-                        What inspired your team?<span className="text-primary ml-1">*</span>
-                      </label>
-                      <p className="font-pixel text-sm text-white/40">Describe your initial idea(s). Separate answers if two PSs selected.</p>
-                      <textarea id="inspiration" required rows={4} maxLength={2000}
-                        placeholder="Describe your initial idea(s)..." value={inspiration}
-                        onChange={(e) => setInspiration(e.target.value)}
-                        className="bg-background-main border-2 border-white/20 text-text-main font-pixel text-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-white/20 resize-none" />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label htmlFor="approach" className="font-pixel text-xl text-text-main uppercase tracking-wider">
-                        Approach & Technologies<span className="text-primary ml-1">*</span>
-                      </label>
-                      <p className="font-pixel text-sm text-white/40">Mention tools/technologies. Separate answers if two PSs.</p>
-                      <textarea id="approach" required rows={4} maxLength={2000}
-                        placeholder="e.g. React + Node.js + TensorFlow for PS1..." value={approach}
-                        onChange={(e) => setApproach(e.target.value)}
-                        className="bg-background-main border-2 border-white/20 text-text-main font-pixel text-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-white/20 resize-none" />
-                    </div>
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="inspiration" className="font-pixel text-xl text-text-main uppercase tracking-wider">
+                          What inspired your team?<span className="text-primary ml-1">*</span>
+                        </label>
+                        <p className="font-pixel text-sm text-white/40">Describe your initial idea(s). Separate answers if two PSs selected.</p>
+                        <textarea id="inspiration" required rows={4} maxLength={2000}
+                          placeholder="Describe your initial idea(s)..." value={inspiration}
+                          onChange={(e) => setInspiration(e.target.value)}
+                          className="bg-background-main border-2 border-white/20 text-text-main font-pixel text-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-white/20 resize-none" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label htmlFor="approach" className="font-pixel text-xl text-text-main uppercase tracking-wider">
+                          Approach & Technologies<span className="text-primary ml-1">*</span>
+                        </label>
+                        <p className="font-pixel text-sm text-white/40">Mention tools/technologies. Separate answers if two PSs.</p>
+                        <textarea id="approach" required rows={4} maxLength={2000}
+                          placeholder="e.g. React + Node.js + TensorFlow for PS1..." value={approach}
+                          onChange={(e) => setApproach(e.target.value)}
+                          className="bg-background-main border-2 border-white/20 text-text-main font-pixel text-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors placeholder:text-white/20 resize-none" />
+                      </div>
                     </>
                   )}
                 </div>
@@ -1193,15 +1193,15 @@ export default function SIHRegisterPage() {
                   <div className="bg-surface-card border-2 border-primary/40 p-6 flex flex-col gap-5">
                     <SectionHeader number="HW" title="Bill of Materials (BOM)"
                       subtitle="Required for Hardware PSs. Please provide a viewable Google Drive link to your BOM PDF." />
-                    
+
                     <div className="flex flex-col gap-2">
                       <label htmlFor="bom-link" className="font-pixel text-xl text-text-main uppercase tracking-wider">
                         Google Drive Link to BOM PDF<span className="text-primary ml-1">*</span>
                       </label>
                       <p className="font-pixel text-sm text-white/40">
                         Please add the PDF to Google Drive and ensure anyone with the link is able to view it. If the access is not provided, the registration can be rejected.
-                        <br>
-                        Note: Hardware component costs must be kept under ₹3000; budget optimization directly impacts your technical avaluation score.
+                        <br />
+                        Note: Hardware component costs must be kept under ₹3000.
                       </p>
                       <input
                         id="bom-link"
@@ -1220,7 +1220,7 @@ export default function SIHRegisterPage() {
                 <div className="bg-surface-card border-2 border-primary/40 p-6 flex flex-col gap-5">
                   <SectionHeader number="FM" title="Faculty Mentor"
                     subtitle="It is not mandatory to have a faculty mentor." />
-                  
+
                   <label className="flex items-start gap-4 cursor-pointer group">
                     <div onClick={() => setHasFacultyMentor((v) => !v)}
                       className={`w-6 h-6 border-2 shrink-0 mt-0.5 flex items-center justify-center transition-colors cursor-pointer ${hasFacultyMentor ? "bg-primary border-primary" : "border-white/30 group-hover:border-primary/50"
@@ -1252,32 +1252,32 @@ export default function SIHRegisterPage() {
 
                 {/* ── CONSENT & DECLARATION ────────────────────────────────── */}
                 <div className="bg-surface-card border-2 border-white/10 p-6 flex flex-col gap-5">
-                    {/* Consent checkbox */}
-                    <label className="flex items-start gap-4 cursor-pointer group">
-                      <div onClick={() => setConsent((v) => !v)}
-                        className={`w-6 h-6 border-2 shrink-0 mt-0.5 flex items-center justify-center transition-colors cursor-pointer ${consent ? "bg-primary border-primary" : "border-white/30 group-hover:border-primary/50"
-                          }`}>
-                        {consent && <span className="material-symbols-outlined text-white text-base">check</span>}
-                      </div>
-                      <span className="font-pixel text-xl text-white/70 leading-relaxed">
-                        Presence of every team member during the whole Hackathon is compulsory.
-                        <span className="text-primary ml-1">*</span>
-                      </span>
-                    </label>
+                  {/* Consent checkbox */}
+                  <label className="flex items-start gap-4 cursor-pointer group">
+                    <div onClick={() => setConsent((v) => !v)}
+                      className={`w-6 h-6 border-2 shrink-0 mt-0.5 flex items-center justify-center transition-colors cursor-pointer ${consent ? "bg-primary border-primary" : "border-white/30 group-hover:border-primary/50"
+                        }`}>
+                      {consent && <span className="material-symbols-outlined text-white text-base">check</span>}
+                    </div>
+                    <span className="font-pixel text-xl text-white/70 leading-relaxed">
+                      Presence of every team member during the whole Hackathon is compulsory.
+                      <span className="text-primary ml-1">*</span>
+                    </span>
+                  </label>
 
-                    {/* Declaration checkbox */}
-                    <label className="flex items-start gap-4 cursor-pointer group">
-                      <div onClick={() => setDeclaration((v) => !v)}
-                        className={`w-6 h-6 border-2 shrink-0 mt-0.5 flex items-center justify-center transition-colors cursor-pointer ${declaration ? "bg-primary border-primary" : "border-white/30 group-hover:border-primary/50"
-                          }`}>
-                        {declaration && <span className="material-symbols-outlined text-white text-base">check</span>}
-                      </div>
-                      <span className="font-pixel text-xl text-white/70 leading-relaxed">
-                        All the information provided are correct, if any information provided is found to be incorrect, the registration can be terminated by the organizer.
-                        <span className="text-primary ml-1">*</span>
-                      </span>
-                    </label>
-                  </div>
+                  {/* Declaration checkbox */}
+                  <label className="flex items-start gap-4 cursor-pointer group">
+                    <div onClick={() => setDeclaration((v) => !v)}
+                      className={`w-6 h-6 border-2 shrink-0 mt-0.5 flex items-center justify-center transition-colors cursor-pointer ${declaration ? "bg-primary border-primary" : "border-white/30 group-hover:border-primary/50"
+                        }`}>
+                      {declaration && <span className="material-symbols-outlined text-white text-base">check</span>}
+                    </div>
+                    <span className="font-pixel text-xl text-white/70 leading-relaxed">
+                      All the information provided are correct, if any information provided is found to be incorrect, the registration can be terminated by the organizer.
+                      <span className="text-primary ml-1">*</span>
+                    </span>
+                  </label>
+                </div>
 
                 {/* ── HONEYPOT (hidden from real users, traps bots) ─────────── */}
                 <div aria-hidden="true" style={{ display: "none" }}>
@@ -1295,18 +1295,18 @@ export default function SIHRegisterPage() {
 
                 {/* ── SUBMIT ────────────────────────────────────────────────── */}
                 <div className="flex flex-col items-center gap-4">
-                    <button type="submit" disabled={submitting || !consent || !declaration} id="sih-submit-btn"
-                      className="group w-full md:w-auto inline-flex items-center justify-center gap-3 bg-primary text-white font-pixel text-2xl md:text-3xl uppercase tracking-widest px-12 py-5 hover:bg-primary/90 transition-all duration-200 shadow-[6px_6px_0px_0px_rgba(215,38,255,0.6)] hover:shadow-[8px_8px_0px_0px_rgba(215,38,255,0.8)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-none active:translate-x-0 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-x-0">
-                      {submitting ? (
-                        <><span className="material-symbols-outlined animate-spin text-3xl">progress_activity</span>Submitting...</>
-                      ) : (
-                        <><span className="material-symbols-outlined text-3xl">send</span>Submit Registration</>
-                      )}
-                    </button>
-                    <p className="font-pixel text-white/30 text-lg text-center max-w-md">
-                      By submitting, you confirm all information is accurate. Data is stored securely and used only for this event.
-                    </p>
-                  </div>
+                  <button type="submit" disabled={submitting || !consent || !declaration} id="sih-submit-btn"
+                    className="group w-full md:w-auto inline-flex items-center justify-center gap-3 bg-primary text-white font-pixel text-2xl md:text-3xl uppercase tracking-widest px-12 py-5 hover:bg-primary/90 transition-all duration-200 shadow-[6px_6px_0px_0px_rgba(215,38,255,0.6)] hover:shadow-[8px_8px_0px_0px_rgba(215,38,255,0.8)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-none active:translate-x-0 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-x-0">
+                    {submitting ? (
+                      <><span className="material-symbols-outlined animate-spin text-3xl">progress_activity</span>Submitting...</>
+                    ) : (
+                      <><span className="material-symbols-outlined text-3xl">send</span>Submit Registration</>
+                    )}
+                  </button>
+                  <p className="font-pixel text-white/30 text-lg text-center max-w-md">
+                    By submitting, you confirm all information is accurate. Data is stored securely and used only for this event.
+                  </p>
+                </div>
               </form>
             </>
           )}
@@ -1314,11 +1314,10 @@ export default function SIHRegisterPage() {
 
         {/* ── TOAST NOTIFICATION ─────────────────────────────────────────── */}
         {toast && (
-          <div className={`fixed bottom-6 right-6 z-50 p-4 border-2 font-pixel text-lg flex items-start gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] max-w-sm ${
-            toast.type === "error" 
-              ? "bg-[#1f0b0d] border-red-500 text-red-300" 
+          <div className={`fixed bottom-6 right-6 z-50 p-4 border-2 font-pixel text-lg flex items-start gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] max-w-sm ${toast.type === "error"
+              ? "bg-[#1f0b0d] border-red-500 text-red-300"
               : "bg-[#0b1f0c] border-green-500 text-green-300"
-          }`}>
+            }`}>
             <span className="material-symbols-outlined text-2xl shrink-0 mt-0.5">
               {toast.type === "error" ? "error" : "check_circle"}
             </span>
@@ -1328,8 +1327,8 @@ export default function SIHRegisterPage() {
               </p>
               <p className="text-white/80 leading-snug">{toast.message}</p>
             </div>
-            <button 
-              onClick={() => setToast(null)} 
+            <button
+              onClick={() => setToast(null)}
               className="text-white/40 hover:text-white transition-colors"
             >
               <span className="material-symbols-outlined text-base">close</span>
