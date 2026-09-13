@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
 const REGISTRATION_CLOSED = false;
-const REGISTRATION_DEADLINE = new Date("2026-09-13T13:00:00+05:30").getTime();
+const REGISTRATION_DEADLINE = new Date("2026-09-13T15:00:00+05:30").getTime();
 
 const ALLOWED_NITW_DOMAINS = ["nitw.ac.in", "student.nitw.ac.in"];
 // ─────────────────────────────────────────────────────────────────────────────
