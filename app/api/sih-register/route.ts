@@ -371,27 +371,33 @@ export async function GET(req: Request) {
     }
 
     const headers = rows[0];
+
+    // Case-insensitive header matching
+    const findCol = (name: string) =>
+      headers.findIndex((h: string) => h?.toString().toLowerCase() === name.toLowerCase());
+
     const emailCols = [
-      headers.indexOf("Authenticated Email"),
-      headers.indexOf("Leader Email"),
-      headers.indexOf("Member 1 Email"),
-      headers.indexOf("Member 2 Email"),
-      headers.indexOf("Member 3 Email"),
-      headers.indexOf("Member 4 Email"),
-      headers.indexOf("Member 5 Email")
+      findCol("Authenticated Email"),
+      findCol("Leader Email"),
+      findCol("Member 1 Email"),
+      findCol("Member 2 Email"),
+      findCol("Member 3 Email"),
+      findCol("Member 4 Email"),
+      findCol("Member 5 Email"),
     ].filter(idx => idx !== -1);
 
     if (emailCols.length === 0) {
       return NextResponse.json({ success: true, authenticated: true, registered: false });
     }
 
-    // Find the row
+    // Find the row — case-insensitive email match
+    const emailLower = email.toLowerCase();
     let userRow: any[] | null = null;
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
       let found = false;
       for (const colIdx of emailCols) {
-        if (row[colIdx] === email) {
+        if (row[colIdx] && row[colIdx].toString().toLowerCase() === emailLower) {
           found = true;
           break;
         }
@@ -406,11 +412,34 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: true, authenticated: true, registered: false });
     }
 
-    // Map row to a nice JSON object
+    // Map row to a nice JSON object (preserving original header names)
     const data: Record<string, string> = {};
     headers.forEach((header: string, idx: number) => {
       data[header] = userRow ? userRow[idx] || "" : "";
     });
+
+    // Normalize key lookups for fields the front-end depends on
+    // so casing differences in the sheet don't break access checks
+    const normalizeKey = (key: string): string | undefined => {
+      const found = headers.find((h: string) => h?.toString().toLowerCase() === key.toLowerCase());
+      return found ? (userRow ? userRow[headers.indexOf(found)] || "" : "") : undefined;
+    };
+    if (!("Shortlisted" in data)) {
+      const v = normalizeKey("Shortlisted");
+      if (v !== undefined) data["Shortlisted"] = v;
+    }
+    if (!("Team Name" in data)) {
+      const v = normalizeKey("Team Name");
+      if (v !== undefined) data["Team Name"] = v;
+    }
+    if (!("Leader Email" in data)) {
+      const v = normalizeKey("Leader Email");
+      if (v !== undefined) data["Leader Email"] = v;
+    }
+    if (!("PS1 Type" in data)) {
+      const v = normalizeKey("PS1 Type");
+      if (v !== undefined) data["PS1 Type"] = v;
+    }
 
     // Fetch Team Mentors
     try {
