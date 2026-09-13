@@ -489,6 +489,7 @@ export default function SIHPage() {
                                   <p><strong>Youtube Link:</strong> <a href={finalSubmission.data?.["Youtube Link"]} target="_blank" className="text-primary hover:underline break-all">{finalSubmission.data?.["Youtube Link"]}</a></p>
                                   <p><strong>PPTX Link:</strong> <a href={finalSubmission.data?.["PPTX Link"]} target="_blank" className="text-primary hover:underline break-all">{finalSubmission.data?.["PPTX Link"]}</a></p>
                                   {finalSubmission.data?.["Github Link"] && <p><strong>Github Link:</strong> <a href={finalSubmission.data?.["Github Link"]} target="_blank" className="text-primary hover:underline break-all">{finalSubmission.data?.["Github Link"]}</a></p>}
+                                  {finalSubmission.data?.["Live Demo Link"] && <p><strong>Live Demo Link:</strong> <a href={finalSubmission.data?.["Live Demo Link"]} target="_blank" className="text-primary hover:underline break-all">{finalSubmission.data?.["Live Demo Link"]}</a></p>}
                                   <div className="mt-2 text-sm text-white/60 bg-white/5 p-3 rounded-md"><strong>Pitch:</strong><br />{finalSubmission.data?.["Pitch"]}</div>
                                 </div>
                              </div>

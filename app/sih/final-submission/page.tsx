@@ -58,6 +58,7 @@ export default function SIHFinalSubmissionPage() {
   const [youtubeLink, setYoutubeLink] = useState("");
   const [pptxLink, setPptxLink] = useState("");
   const [githubLink, setGithubLink] = useState("");
+  const [liveDemoLink, setLiveDemoLink] = useState("");
   const [pitch, setPitch] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
@@ -128,6 +129,7 @@ export default function SIHFinalSubmissionPage() {
           youtubeLink,
           pptxLink,
           githubLink,
+          liveDemoLink,
           pitch
         })
       });
@@ -262,6 +264,16 @@ export default function SIHFinalSubmissionPage() {
               onChange={setGithubLink} 
               placeholder="https://github.com/..." 
               hint="Compulsory for Software teams, optional for Hardware teams."
+            />
+
+            <FormInput 
+              id="liveDemoLink" 
+              label="Live Demo Link" 
+              required={false}
+              value={liveDemoLink} 
+              onChange={setLiveDemoLink} 
+              placeholder="https://your-demo-url.com" 
+              hint="Optional. Provide a link to your live working demo if deployed."
             />
           </div>
 

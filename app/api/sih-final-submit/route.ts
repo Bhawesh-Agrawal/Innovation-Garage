@@ -192,6 +192,7 @@ export async function POST(req: Request) {
       "Youtube Link": body.youtubeLink || "",
       "PPTX Link": body.pptxLink || "",
       "Github Link": body.githubLink || "",
+      "Live Demo Link": body.liveDemoLink || "",
       "Pitch": body.pitch || "",
     };
 
